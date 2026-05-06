@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kredi Kartı Takip Pro v1.0</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --primary: #BB86FC;
+            --secondary: #03DAC6;
+            --error: #CF6679;
+            --text: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            background-color: var(--surface);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 500px;
+            padding: 15px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        h2 { color: var(--primary); margin-top: 0; font-size: 1.2rem; }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #2c2c2c;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            min-height: 44px; /* Mobil dokunma alanı */
+        }
+
+        button {
+            background-color: var(--primary);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button.secondary { background-color: var(--secondary); }
+        button.danger { background-color: var(--error); color: white; }
+
+        .summary-box {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--secondary);
+            margin: 20px 0;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        .paid { border-left: 5px solid var(--secondary); opacity: 0.7; }
+
+        #chartContainer {
+            margin-top: 20px;
+            height: 300px;
+        }
+
+        /* Password Modal */
+        #authOverlay {
+            position: fixed;
+            top:0; left:0; width: 100%; height: 100%;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div id="authOverlay">
+    <div class="card" style="width: 80%;">
+        <h2>Güvenlik</h2>
+        <input type="password" id="passInput" placeholder="Şifre Giriniz">
+        <button onclick="checkPassword()">GİRİŞ YAP</button>
+    </div>
+</div>
+
+<header>
+    <h1 style="font-size: 1.2rem; margin: 0;">Kredi Kartı Takip Pro</h1>
+</header>
+
+<div class="container">
+    <div class="card">
+        <h2>Ayarlar</h2>
+        <div style="display: flex; gap: 10px;">
+            <select id="yearSelect"></select>
+            <select id="monthSelect"></select>
+        </div>
+        <button onclick="refreshUI()">GÜNCELLE</button>
+    </div>
+
+    <div class="card">
+        <h2>Veri Girişi</h2>
+        <select id="cardSelect"></select>
+        <button class="secondary" onclick="addCardPrompt()" style="padding: 5px; font-size: 12px;">+ Yeni Kart Ekle</button>
+        <input type="number" id="amountInput" placeholder="Tutar (TL)" step="0.01">
+        <input type="number" id="dayInput" placeholder="Son Ödeme Günü (1-31)">
+        <button onclick="saveEntry()">KAYDET</button>
+    </div>
+
+    <div class="summary-box" id="totalDisplay">TOPLAM: 0.00 TL</div>
+
+    <div class="card">
+        <h2>İşlemler</h2>
+        <div id="entryList"></div>
+    </div>
+
+    <div class="card">
+        <h2>Analiz</h2>
+        <div id="chartContainer">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('cc_tracker_data')) || { cards: [], statements: [] };
+    const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    let chartInstance = null;
+
+    function checkPassword() {
+        if(document.getElementById('passInput').value === "1234") {
+            document.getElementById('authOverlay').style.display = 'none';
+        } else {
+            alert("Hatalı Şifre!");
+        }
+    }
+
+    function initSelectors() {
+        const ySel = document.getElementById('yearSelect');
+        const mSel = document.getElementById('monthSelect');
+        const currentYear = new Date().getFullYear();
+        
+        for(let i = 2024; i <= 2035; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.innerText = i;
+            if(i === currentYear) opt.selected = true;
+            ySel.appendChild(opt);
+        }
+
+        months.forEach((m, index) => {
+            let opt = document.createElement('option');
+            opt.value = m; opt.innerText = m;
+            if(index === new Date().getMonth()) opt.selected = true;
+            mSel.appendChild(opt);
+        });
+
+        updateCardSelect();
+    }
+
+    function updateCardSelect() {
+        const cSel = document.getElementById('cardSelect');
+        cSel.innerHTML = "";
+        db.cards.forEach(c => {
+            let opt = document.createElement('option');
+            opt.value = c; opt.innerText = c;
+            cSel.appendChild(opt);
+        });
+    }
+
+    function addCardPrompt() {
+        let name = prompt("Kart Adı Giriniz:");
+        if(name && !db.cards.includes(name)) {
+            db.cards.push(name);
+            saveToStorage();
+            updateCardSelect();
+        }
+    }
+
+    function saveEntry() {
+        const card = document.getElementById('cardSelect').value;
+        const amount = parseFloat(document.getElementById('amountInput').value);
+        const day = parseInt(document.getElementById('dayInput').value);
+        const year = document.getElementById('yearSelect').value;
+        const month = document.getElementById('monthSelect').value;
+
+        if(!card || isNaN(amount) || isNaN(day)) return alert("Eksik veri!");
+
+        // Update or Insert logic
+        const index = db.statements.findIndex(s => s.card === card && s.year === year && s.month === month);
+        const entry = { card, amount, day, year, month, isPaid: false };
+
+        if(index > -1) db.statements[index] = entry;
+        else db.statements.push(entry);
+
+        saveToStorage();
+        refreshUI();
+        document.getElementById('amountInput').value = "";
+        document.getElementById('dayInput').value = "";
+    }
+
+    function togglePaid(idxInView) {
+        const year = document.getElementById('yearSelect').value;
+        const month = document.getElementById('monthSelect').value;
+        const filtered = db.statements.filter(s => s.year === year && s.month === month);
+        const target = filtered[idxInView];
+        
+        const realIdx = db.statements.findIndex(s => s === target);
+        db.statements[realIdx].isPaid = !db.statements[realIdx].isPaid;
+        
+        saveToStorage();
+        refreshUI();
+    }
+
+    function deleteEntry(idxInView) {
+        if(!confirm("Silmek istediğinize emin misiniz?")) return;
+        const year = document.getElementById('yearSelect').value;
+        const month = document.getElementById('monthSelect').value;
+        const filtered = db.statements.filter(s => s.year === year && s.month === month);
+        const target = filtered[idxInView];
+
+        db.statements = db.statements.filter(s => s !== target);
+        saveToStorage();
+        refreshUI();
+    }
+
+    function refreshUI() {
+        const year = document.getElementById('yearSelect').value;
+        const month = document.getElementById('monthSelect').value;
+        const listDiv = document.getElementById('entryList');
+        listDiv.innerHTML = "";
+
+        const filtered = db.statements.filter(s => s.year === year && s.month === month);
+        let total = 0;
+
+        filtered.forEach((s, i) => {
+            total += s.amount;
+            listDiv.innerHTML += `
+                <div class="list-item ${s.isPaid ? 'paid' : ''}">
+                    <div>
+                        <strong>${s.card}</strong><br>
+                        <small>${s.amount.toLocaleString('tr-TR')} TL - Gün: ${s.day}</small>
+                    </div>
+                    <div>
+                        <button onclick="togglePaid(${i})" style="width:auto; padding:5px 10px;">${s.isPaid ? 'Aç' : 'Öde'}</button>
+                        <button class="danger" onclick="deleteEntry(${i})" style="width:auto; padding:5px 10px;">X</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        document.getElementById('totalDisplay').innerText = `TOPLAM: ${total.toLocaleString('tr-TR')} TL`;
+        updateChart(filtered);
+    }
+
+    function updateChart(data) {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.map(d => d.card),
+                datasets: [{
+                    data: data.map(d => d.amount),
+                    backgroundColor: ['#BB86FC', '#03DAC6', '#CF6679', '#FFB74D', '#4FC3F7', '#AED581']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'white' } } } }
+        });
+    }
+
+    function saveToStorage() {
+        localStorage.setItem('cc_tracker_data', JSON.stringify(db));
+    }
+
+    window.onload = () => {
+        initSelectors();
+        refreshUI();
+    };
+
+    // Service Worker Kaydı
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kart-takip-v1';
+const CACHE_NAME = 'kart-takip-v2';
 const assets = [
   'index.html',
   'manifest.json',

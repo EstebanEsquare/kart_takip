@@ -1,2 +1,1 @@
-# screenshot
-telefon pc arası ekran görüntüsü
+kişilsel kart takibi

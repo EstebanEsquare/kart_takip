@@ -3,151 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kart Takip Pro v3.0</title>
+    <title>Kart Takip Pro v5.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --bg: #121212;
-            --surface: #1e1e1e;
-            --primary: #BB86FC;
-            --secondary: #03DAC6;
-            --error: #CF6679;
-            --text: #FFFFFF;
-        }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column; align-items: center;
-        }
-
-        header {
-            width: 100%; padding: 15px; text-align: center;
-            background-color: var(--surface); box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            position: sticky; top: 0; z-index: 100;
-        }
-
+        :root { --bg: #121212; --surface: #1e1e1e; --primary: #BB86FC; --secondary: #03DAC6; --error: #CF6679; --text: #FFFFFF; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        header { width: 100%; padding: 15px; text-align: center; background-color: var(--surface); box-shadow: 0 4px 6px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100; }
         .container { width: 95%; max-width: 500px; padding: 15px; box-sizing: border-box; }
-
-        .card {
-            background: var(--surface); border-radius: 12px;
-            padding: 15px; margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
+        .card { background: var(--surface); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 5px; }
-
-        input, select, button {
-            width: 100%; padding: 12px; margin: 5px 0;
-            border-radius: 8px; border: 1px solid #333;
-            background: #2c2c2c; color: white; font-size: 16px;
-            box-sizing: border-box; min-height: 48px;
-        }
-
+        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #2c2c2c; color: white; font-size: 16px; box-sizing: border-box; min-height: 48px; }
         button { background-color: var(--primary); color: #000; font-weight: bold; border: none; cursor: pointer; }
-        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
         .btn-danger { background-color: var(--error); color: white; }
         .btn-secondary { background-color: var(--secondary); color: #000; }
-
         .summary-box { text-align: center; font-size: 1.4rem; color: var(--secondary); margin: 15px 0; font-weight: bold; }
-
-        .list-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px; border-bottom: 1px solid #333;
-            background: #252525; margin-bottom: 5px; border-radius: 8px;
-        }
-
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #333; background: #252525; margin-bottom: 5px; border-radius: 8px; }
         .paid { border-left: 6px solid var(--secondary); opacity: 0.8; }
-        
-        .action-btns { display: flex; gap: 5px; }
-        .action-btns button { width: auto; min-height: 35px; padding: 5px 10px; font-size: 11px; }
-
-        #chartContainer { height: 250px; margin-top: 10px; }
-
-        .backup-section { display: flex; gap: 10px; margin-top: 10px; }
-        .backup-section button { flex: 1; font-size: 12px; min-height: 40px; }
+        .backup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<header>
-    <h1 style="font-size: 1.1rem; margin: 0;">Kart Takip Pro v3.0</h1>
-</header>
+<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip Pro v5.0</h1></header>
 
 <div class="container">
     <div class="card">
-        <h2>Dönem ve Kart Seçimi</h2>
+        <h2>Dönem ve Kart</h2>
         <div style="display: flex; gap: 5px;">
             <select id="yearSelect" onchange="refreshUI()"></select>
             <select id="monthSelect" onchange="refreshUI()"></select>
         </div>
         <div style="display: flex; gap: 5px; margin-top: 10px;">
             <select id="cardSelect" style="flex: 2;"></select>
-            <button onclick="addCardPrompt()" style="flex: 1; min-height: 48px;">+ Kart</button>
+            <button onclick="addCardPrompt()" style="flex: 1;">+ Kart</button>
         </div>
     </div>
 
     <div class="card">
         <h2>Veri Girişi</h2>
         <input type="number" id="amountInput" placeholder="Tutar (TL)" inputmode="decimal">
-        <input type="number" id="dayInput" placeholder="Son Ödeme Günü (1-31)" inputmode="numeric">
-        <button onclick="saveEntry()">KAYDET / GÜNCELLE</button>
+        <input type="number" id="dayInput" placeholder="Gün (1-31)">
+        <button onclick="saveEntry()">KAYDET</button>
     </div>
 
     <div class="summary-box" id="totalDisplay">0.00 TL</div>
 
     <div class="card">
-        <h2>Harcama Listesi</h2>
+        <h2>Harcamalar</h2>
         <div id="entryList"></div>
     </div>
 
     <div class="card">
-        <h2>Yıllık Analiz</h2>
-        <div id="chartContainer">
-            <canvas id="barChart"></canvas>
+        <h2>Yedekleme ve Veri Kurtarma</h2>
+        <div class="backup-btns">
+            <button class="btn-secondary" onclick="exportBackup()">Dosya İndir</button>
+            <button onclick="importFromText()">Metinle Yükle</button>
         </div>
-    </div>
-
-    <div class="card">
-        <h2>Veri Yönetimi & Yedekleme</h2>
-        <p style="font-size: 12px; color: #aaa;">Verileriniz cihazınızda saklanır. Silmeden önce yedek almayı unutmayın.</p>
-        <div class="backup-section">
-            <button class="btn-secondary" onclick="exportBackup()">Yedek İndir (JSON)</button>
-            <button class="btn-outline" onclick="document.getElementById('importFile').click()">Yedek Yükle</button>
-            <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".json">
-        </div>
-        <button class="btn-danger" style="margin-top: 10px;" onclick="clearAllData()">TÜM VERİLERİ SİL</button>
+        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept="application/json">
+        <button class="btn-secondary" style="margin-top:8px" onclick="document.getElementById('importFile').click()">Dosya Seçerek Yükle</button>
+        <button class="btn-danger" style="margin-top: 15px;" onclick="clearAllData()">HER ŞEYİ SİL</button>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('cc_tracker_v3')) || { cards: [], statements: [] };
+    // VERİ GÖÇÜ (MIGRATION): Eski versiyonlardaki verileri kurtarır
+    function migrateData() {
+        const v4 = localStorage.getItem('cc_tracker_v4');
+        const v3 = localStorage.getItem('cc_tracker_v3');
+        const current = localStorage.getItem('cc_tracker_v5');
+
+        if (!current) {
+            if (v4) { localStorage.setItem('cc_tracker_v5', v4); return JSON.parse(v4); }
+            if (v3) { localStorage.setItem('cc_tracker_v5', v3); return JSON.parse(v3); }
+        }
+        return JSON.parse(current) || { cards: [], statements: [] };
+    }
+
+    let db = migrateData();
     const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-    let barChartInstance = null;
 
     function init() {
         const ySel = document.getElementById('yearSelect');
         const mSel = document.getElementById('monthSelect');
         const now = new Date();
-        
         for(let i = 2024; i <= 2030; i++) {
-            let opt = document.createElement('option');
-            opt.value = i; opt.innerText = i;
+            let opt = document.createElement('option'); opt.value = i; opt.innerText = i;
             if(i === now.getFullYear()) opt.selected = true;
             ySel.appendChild(opt);
         }
-
         months.forEach((m, index) => {
-            let opt = document.createElement('option');
-            opt.value = m; opt.innerText = m;
+            let opt = document.createElement('option'); opt.value = m; opt.innerText = m;
             if(index === now.getMonth()) opt.selected = true;
             mSel.appendChild(opt);
         });
-
         updateCardOptions();
         refreshUI();
     }
@@ -156,14 +106,13 @@
         const cSel = document.getElementById('cardSelect');
         cSel.innerHTML = "";
         db.cards.forEach(c => {
-            let opt = document.createElement('option');
-            opt.value = c; opt.innerText = c;
+            let opt = document.createElement('option'); opt.value = c; opt.innerText = c;
             cSel.appendChild(opt);
         });
     }
 
     function addCardPrompt() {
-        let name = prompt("Yeni Kart Adı:");
+        let name = prompt("Kart Adı:");
         if(name && !db.cards.includes(name)) {
             db.cards.push(name);
             saveToStorage();
@@ -178,7 +127,7 @@
         const year = document.getElementById('yearSelect').value;
         const month = document.getElementById('monthSelect').value;
 
-        if(!card || isNaN(amount)) return alert("Lütfen tutar giriniz!");
+        if(!card || isNaN(amount)) return alert("Hatalı giriş!");
 
         const index = db.statements.findIndex(s => s.card === card && s.year === year && s.month === month);
         const entry = { card, amount, day: day || 1, year, month, isPaid: false };
@@ -192,131 +141,81 @@
         document.getElementById('dayInput').value = "";
     }
 
-    function togglePaid(idx) {
-        const year = document.getElementById('yearSelect').value;
-        const month = document.getElementById('monthSelect').value;
-        const filtered = db.statements.filter(s => s.year === year && s.month === month);
-        const target = filtered[idx];
-        const realIdx = db.statements.findIndex(s => s === target);
-        db.statements[realIdx].isPaid = !db.statements[realIdx].isPaid;
-        saveToStorage();
-        refreshUI();
-    }
-
-    function deleteEntry(idx) {
-        if(!confirm("Bu kaydı silmek istiyor musunuz?")) return;
-        const year = document.getElementById('yearSelect').value;
-        const month = document.getElementById('monthSelect').value;
-        const filtered = db.statements.filter(s => s.year === year && s.month === month);
-        const target = filtered[idx];
-        db.statements = db.statements.filter(s => s !== target);
-        saveToStorage();
-        refreshUI();
-    }
-
     function refreshUI() {
         const year = document.getElementById('yearSelect').value;
         const month = document.getElementById('monthSelect').value;
         const listDiv = document.getElementById('entryList');
         listDiv.innerHTML = "";
-
         const filtered = db.statements.filter(s => s.year === year && s.month === month);
         let total = 0;
-
         filtered.sort((a,b) => a.day - b.day).forEach((s, i) => {
             total += s.amount;
             listDiv.innerHTML += `
                 <div class="list-item ${s.isPaid ? 'paid' : ''}">
-                    <div>
-                        <strong>${s.card}</strong><br>
-                        <small>${s.amount.toLocaleString('tr-TR')} TL | Gün: ${s.day}</small>
-                    </div>
-                    <div class="action-btns">
-                        <button onclick="togglePaid(${i})">${s.isPaid ? 'Aç' : 'Öde'}</button>
-                        <button class="del-btn btn-danger" onclick="deleteEntry(${i})">X</button>
-                    </div>
-                </div>
-            `;
+                    <div><strong>${s.card}</strong><br><small>${s.amount.toLocaleString('tr-TR')} TL | Gün: ${s.day}</small></div>
+                    <button onclick="togglePaid('${s.card}', '${s.year}', '${s.month}')" style="width:auto; min-height:35px; padding:5px 10px;">${s.isPaid ? 'Aç' : 'Öde'}</button>
+                </div>`;
         });
-
-        document.getElementById('totalDisplay').innerText = `TOPLAM: ${total.toLocaleString('tr-TR', {minimumFractionDigits: 2})} TL`;
-        updateBarChart(year);
+        document.getElementById('totalDisplay').innerText = `TOPLAM: ${total.toLocaleString('tr-TR')} TL`;
     }
 
-    function updateBarChart(selectedYear) {
-        const ctx = document.getElementById('barChart').getContext('2d');
-        const yearlyData = months.map(m => {
-            return db.statements
-                .filter(s => s.year === selectedYear && s.month === m)
-                .reduce((sum, current) => sum + current.amount, 0);
-        });
-
-        if(barChartInstance) barChartInstance.destroy();
-        barChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: months.map(m => m.substring(0,3)),
-                datasets: [{
-                    label: selectedYear + ' Harcamaları',
-                    data: yearlyData,
-                    backgroundColor: '#BB86FC',
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: 'white' } },
-                    x: { ticks: { color: 'white' } }
-                },
-                plugins: { legend: { labels: { color: 'white' } } }
-            }
-        });
+    function togglePaid(card, year, month) {
+        const idx = db.statements.findIndex(s => s.card === card && s.year === year && s.month === month);
+        db.statements[idx].isPaid = !db.statements[idx].isPaid;
+        saveToStorage();
+        refreshUI();
     }
 
-    // --- YEDEKLEME VE VERİ YÖNETİMİ ---
+    function saveToStorage() { localStorage.setItem('cc_tracker_v5', JSON.stringify(db)); }
+
+    // YEDEKLEME FONKSİYONLARI
     function exportBackup() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "kart_takip_yedek_" + new Date().toISOString().slice(0,10) + ".json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+        const dl = document.createElement('a'); dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", "kart_takip_yedek.json"); dl.click();
+    }
+
+    // Dosya seçilemiyorsa alternatif: Metin yapıştırarak yükleme
+    function importFromText() {
+        const txt = prompt("JSON yedeğin içindeki metni buraya yapıştırın:");
+        if (txt) {
+            try {
+                const imported = JSON.parse(txt);
+                if (imported.cards) {
+                    db = imported;
+                    saveToStorage();
+                    location.reload();
+                }
+            } catch (e) { alert("Hatalı metin!"); }
+        }
     }
 
     function importBackup(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             try {
-                const importedData = JSON.parse(e.target.result);
-                if (importedData.cards && importedData.statements) {
-                    db = importedData;
+                const imported = JSON.parse(e.target.result);
+                if (imported.cards) {
+                    db = imported;
                     saveToStorage();
-                    updateCardOptions();
-                    refreshUI();
                     alert("Yedek başarıyla yüklendi!");
+                    location.reload();
                 }
-            } catch (err) { alert("Geçersiz yedek dosyası!"); }
+            } catch (err) { alert("Dosya okunamadı!"); }
         };
         reader.readAsText(file);
     }
 
     function clearAllData() {
-        if(confirm("TÜM veriler ve kart tanımları silinecek. Emin misiniz?")) {
-            db = { cards: [], statements: [] };
-            saveToStorage();
-            updateCardOptions();
-            refreshUI();
+        if(confirm("TÜM veriler silinecek! Emin misiniz?")) {
+            localStorage.clear();
+            location.reload();
         }
     }
 
-    function saveToStorage() { localStorage.setItem('cc_tracker_v3', JSON.stringify(db)); }
-
     window.onload = init;
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kart Takip Pro v7.0</title>
+    <title>Kart Takip Pro v8.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,21 +15,22 @@
         .card { background: var(--surface); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 5px; }
         input, select, button, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #2c2c2c; color: white; font-size: 16px; box-sizing: border-box; min-height: 48px; }
-        textarea { min-height: 100px; font-family: monospace; font-size: 11px; resize: vertical; }
         button { background-color: var(--primary); color: #000; font-weight: bold; border: none; cursor: pointer; }
         .btn-danger { background-color: var(--error); color: white; }
         .btn-secondary { background-color: var(--secondary); color: #000; }
         .summary-box { text-align: center; font-size: 1.4rem; color: var(--secondary); margin: 15px 0; font-weight: bold; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #333; background: #252525; margin-bottom: 5px; border-radius: 8px; }
         .paid { border-left: 6px solid var(--secondary); opacity: 0.8; }
+        .chart-container { height: 300px; margin-top: 10px; width: 100%; }
         .flex-row { display: flex; gap: 5px; }
     </style>
 </head>
 <body>
 
-<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip Pro v7.0</h1></header>
+<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip Pro v8.0</h1></header>
 
 <div class="container">
+    <!-- Dönem ve Kart -->
     <div class="card">
         <h2>Dönem ve Kart</h2>
         <div class="flex-row">
@@ -42,6 +43,7 @@
         </div>
     </div>
 
+    <!-- Veri Girişi -->
     <div class="card">
         <h2>Hızlı Veri Girişi</h2>
         <input type="number" id="amountInput" placeholder="Tutar (TL)" inputmode="decimal">
@@ -51,64 +53,62 @@
 
     <div class="summary-box" id="totalDisplay">0.00 TL</div>
 
+    <!-- Harcama Listesi -->
     <div class="card">
-        <h2>Harcama Listesi</h2>
+        <h2>Bu Ayın Listesi</h2>
         <div id="entryList"></div>
     </div>
 
+    <!-- YILLIK ANALİZ GRAFİĞİ -->
     <div class="card">
-        <h2>Veri Yönetimi (Yedekleme)</h2>
-        <div class="flex-row">
-            <button class="btn-secondary" onclick="exportBackup()">YEDEK İNDİR</button>
-            <button onclick="document.getElementById('importFile').click()">DOSYA SEÇ</button>
+        <h2>Yıllık Harcama Seyri (12 Ay)</h2>
+        <div class="chart-container">
+            <canvas id="yearlyBarChart"></canvas>
         </div>
-        <!-- Gelişmiş accept parametresi -->
-        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".json,application/json">
-        
-        <p style="font-size: 11px; color: #aaa; margin: 10px 0 5px 0;">Dosya seçemiyorsanız metni buraya yapıştırın:</p>
-        <textarea id="importArea" placeholder='{"cards": [], "statements": []}'></textarea>
+    </div>
+
+    <!-- Veri Yönetimi -->
+    <div class="card">
+        <h2>Veri Yönetimi (.TXT Yedek)</h2>
+        <div class="flex-row">
+            <button class="btn-secondary" onclick="exportBackup()">YEDEK İNDİR (.TXT)</button>
+            <button onclick="document.getElementById('importFile').click()">DOSYA SEÇ (.TXT)</button>
+        </div>
+        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".txt,text/plain">
+
+        <p style="font-size: 11px; color: #aaa; margin: 15px 0 5px 0;">Manuel Metin Yükleme:</p>
+        <textarea id="importArea" placeholder="Yedek metnini buraya yapıştırın..."></textarea>
         <button onclick="importFromTextArea()">METNİ YÜKLE</button>
-        
-        <button class="btn-danger" style="margin-top: 15px;" onclick="clearAllData()">TÜM VERİLERİ SİL</button>
+
+        <button class="btn-danger" style="margin-top: 20px;" onclick="clearAllData()">TÜM VERİLERİ SİL</button>
     </div>
 </div>
 
 <script>
-    // Migration: Eski versiyonlardan (v3-v6) veri taşıma
-    function migrateData() {
-        const versions = ['cc_tracker_v6', 'cc_tracker_v5', 'cc_tracker_v4', 'cc_tracker_v3'];
-        const currentKey = 'cc_tracker_v7';
-        const current = localStorage.getItem(currentKey);
-        
-        if (!current) {
-            for (let v of versions) {
-                const oldData = localStorage.getItem(v);
-                if (oldData) {
-                    localStorage.setItem(currentKey, oldData);
-                    return JSON.parse(oldData);
-                }
-            }
-        }
-        return JSON.parse(current) || { cards: [], statements: [] };
-    }
+    let db = JSON.parse(localStorage.getItem('cc_tracker_v8')) ||
+             JSON.parse(localStorage.getItem('cc_tracker_v7')) ||
+             { cards: [], statements: [] };
 
-    let db = migrateData();
     const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    let yearlyChart = null;
 
     function init() {
         const ySel = document.getElementById('yearSelect');
         const mSel = document.getElementById('monthSelect');
         const now = new Date();
+
         for(let i = 2024; i <= 2030; i++) {
             let opt = document.createElement('option'); opt.value = i; opt.innerText = i;
             if(i === now.getFullYear()) opt.selected = true;
             ySel.appendChild(opt);
         }
+
         months.forEach((m, index) => {
             let opt = document.createElement('option'); opt.value = m; opt.innerText = m;
             if(index === now.getMonth()) opt.selected = true;
             mSel.appendChild(opt);
         });
+
         updateCardOptions();
         refreshUI();
     }
@@ -157,8 +157,10 @@
         const month = document.getElementById('monthSelect').value;
         const listDiv = document.getElementById('entryList');
         listDiv.innerHTML = "";
+
         const filtered = db.statements.filter(s => s.year === year && s.month === month);
         let total = 0;
+
         filtered.sort((a,b) => a.day - b.day).forEach((s, i) => {
             total += s.amount;
             listDiv.innerHTML += `
@@ -168,6 +170,8 @@
                 </div>`;
         });
         document.getElementById('totalDisplay').innerText = `TOPLAM: ${total.toLocaleString('tr-TR', {minimumFractionDigits:2})} TL`;
+
+        updateYearlyChart(year);
     }
 
     function togglePaid(card, year, month) {
@@ -177,18 +181,52 @@
         refreshUI();
     }
 
-    function saveToStorage() { localStorage.setItem('cc_tracker_v7', JSON.stringify(db)); }
+    function updateYearlyChart(selectedYear) {
+        const ctx = document.getElementById('yearlyBarChart').getContext('2d');
 
-    function exportBackup() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-        const dl = document.createElement('a');
-        dl.setAttribute("href", dataStr);
-        dl.setAttribute("download", "kart_takip_yedek.json");
-        document.body.appendChild(dl);
-        dl.click();
-        document.body.removeChild(dl);
+        const chartData = months.map(m => {
+            return db.statements
+                .filter(s => s.year === selectedYear && s.month === m)
+                .reduce((sum, curr) => sum + curr.amount, 0);
+        });
+
+        if(yearlyChart) yearlyChart.destroy();
+
+        yearlyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: months.map(m => m.substring(0,3)),
+                datasets: [{
+                    label: selectedYear + ' Aylık Toplam (TL)',
+                    data: chartData,
+                    backgroundColor: '#BB86FC',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: '#333' } },
+                    x: { ticks: { color: '#fff', font: { size: 10 } }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
     }
 
+    function saveToStorage() { localStorage.setItem('cc_tracker_v8', JSON.stringify(db)); }
+
+    // .TXT OLARAK DIŞA AKTAR
+    function exportBackup() {
+        const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+        const dl = document.createElement('a');
+        dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", "kart_takip_yedek.txt");
+        dl.click();
+    }
+
+    // .TXT OLARAK İÇE AKTAR
     function importBackup(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -196,39 +234,27 @@
         reader.onload = function(e) {
             try {
                 const imported = JSON.parse(e.target.result);
-                if (processImport(imported)) {
-                    alert("Dosya başarıyla yüklendi!");
-                }
-            } catch (err) {
-                alert("Hata: Dosya içeriği geçerli bir JSON değil!");
-            }
+                processImport(imported);
+            } catch (err) { alert("Hata: Dosya içeriği geçerli bir yedek metni değil!"); }
         };
         reader.readAsText(file);
-        event.target.value = ''; // Aynı dosyayı tekrar seçebilmek için temizle
     }
 
     function importFromTextArea() {
         const val = document.getElementById('importArea').value;
-        if (!val) return alert("Kutu boş!");
         try {
             const imported = JSON.parse(val);
-            if (processImport(imported)) {
-                alert("Metin başarıyla yüklendi!");
-            }
-        } catch (e) {
-            alert("Hata: Metin geçerli bir JSON değil!");
-        }
+            processImport(imported);
+        } catch (e) { alert("Hata: Metin geçerli bir JSON yapısı değil!"); }
     }
 
     function processImport(data) {
-        if (data && data.cards && Array.isArray(data.statements)) {
+        if (data && data.cards) {
             db = data;
             saveToStorage();
+            alert("Yedek başarıyla yüklendi!");
             location.reload();
-            return true;
         }
-        alert("Hata: Veri yapısı uyumsuz!");
-        return false;
     }
 
     function clearAllData() {
@@ -239,7 +265,6 @@
     }
 
     window.onload = init;
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 </script>
 </body>
 </html>

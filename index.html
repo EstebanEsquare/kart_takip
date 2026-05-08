@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kart Takip Pro v5.0</title>
+    <title>Kart Takip Pro v7.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,69 +14,80 @@
         .container { width: 95%; max-width: 500px; padding: 15px; box-sizing: border-box; }
         .card { background: var(--surface); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #2c2c2c; color: white; font-size: 16px; box-sizing: border-box; min-height: 48px; }
+        input, select, button, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #2c2c2c; color: white; font-size: 16px; box-sizing: border-box; min-height: 48px; }
+        textarea { min-height: 100px; font-family: monospace; font-size: 11px; resize: vertical; }
         button { background-color: var(--primary); color: #000; font-weight: bold; border: none; cursor: pointer; }
         .btn-danger { background-color: var(--error); color: white; }
         .btn-secondary { background-color: var(--secondary); color: #000; }
         .summary-box { text-align: center; font-size: 1.4rem; color: var(--secondary); margin: 15px 0; font-weight: bold; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #333; background: #252525; margin-bottom: 5px; border-radius: 8px; }
         .paid { border-left: 6px solid var(--secondary); opacity: 0.8; }
-        .backup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .flex-row { display: flex; gap: 5px; }
     </style>
 </head>
 <body>
 
-<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip Pro v5.0</h1></header>
+<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip Pro v7.0</h1></header>
 
 <div class="container">
     <div class="card">
         <h2>Dönem ve Kart</h2>
-        <div style="display: flex; gap: 5px;">
+        <div class="flex-row">
             <select id="yearSelect" onchange="refreshUI()"></select>
             <select id="monthSelect" onchange="refreshUI()"></select>
         </div>
-        <div style="display: flex; gap: 5px; margin-top: 10px;">
+        <div class="flex-row" style="margin-top: 10px;">
             <select id="cardSelect" style="flex: 2;"></select>
             <button onclick="addCardPrompt()" style="flex: 1;">+ Kart</button>
         </div>
     </div>
 
     <div class="card">
-        <h2>Veri Girişi</h2>
+        <h2>Hızlı Veri Girişi</h2>
         <input type="number" id="amountInput" placeholder="Tutar (TL)" inputmode="decimal">
-        <input type="number" id="dayInput" placeholder="Gün (1-31)">
+        <input type="number" id="dayInput" placeholder="Gün (1-31)" inputmode="numeric">
         <button onclick="saveEntry()">KAYDET</button>
     </div>
 
     <div class="summary-box" id="totalDisplay">0.00 TL</div>
 
     <div class="card">
-        <h2>Harcamalar</h2>
+        <h2>Harcama Listesi</h2>
         <div id="entryList"></div>
     </div>
 
     <div class="card">
-        <h2>Yedekleme ve Veri Kurtarma</h2>
-        <div class="backup-btns">
-            <button class="btn-secondary" onclick="exportBackup()">Dosya İndir</button>
-            <button onclick="importFromText()">Metinle Yükle</button>
+        <h2>Veri Yönetimi (Yedekleme)</h2>
+        <div class="flex-row">
+            <button class="btn-secondary" onclick="exportBackup()">YEDEK İNDİR</button>
+            <button onclick="document.getElementById('importFile').click()">DOSYA SEÇ</button>
         </div>
-        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept="application/json">
-        <button class="btn-secondary" style="margin-top:8px" onclick="document.getElementById('importFile').click()">Dosya Seçerek Yükle</button>
-        <button class="btn-danger" style="margin-top: 15px;" onclick="clearAllData()">HER ŞEYİ SİL</button>
+        <!-- Gelişmiş accept parametresi -->
+        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".json,application/json">
+        
+        <p style="font-size: 11px; color: #aaa; margin: 10px 0 5px 0;">Dosya seçemiyorsanız metni buraya yapıştırın:</p>
+        <textarea id="importArea" placeholder='{"cards": [], "statements": []}'></textarea>
+        <button onclick="importFromTextArea()">METNİ YÜKLE</button>
+        
+        <button class="btn-danger" style="margin-top: 15px;" onclick="clearAllData()">TÜM VERİLERİ SİL</button>
     </div>
 </div>
 
 <script>
-    // VERİ GÖÇÜ (MIGRATION): Eski versiyonlardaki verileri kurtarır
+    // Migration: Eski versiyonlardan (v3-v6) veri taşıma
     function migrateData() {
-        const v4 = localStorage.getItem('cc_tracker_v4');
-        const v3 = localStorage.getItem('cc_tracker_v3');
-        const current = localStorage.getItem('cc_tracker_v5');
-
+        const versions = ['cc_tracker_v6', 'cc_tracker_v5', 'cc_tracker_v4', 'cc_tracker_v3'];
+        const currentKey = 'cc_tracker_v7';
+        const current = localStorage.getItem(currentKey);
+        
         if (!current) {
-            if (v4) { localStorage.setItem('cc_tracker_v5', v4); return JSON.parse(v4); }
-            if (v3) { localStorage.setItem('cc_tracker_v5', v3); return JSON.parse(v3); }
+            for (let v of versions) {
+                const oldData = localStorage.getItem(v);
+                if (oldData) {
+                    localStorage.setItem(currentKey, oldData);
+                    return JSON.parse(oldData);
+                }
+            }
         }
         return JSON.parse(current) || { cards: [], statements: [] };
     }
@@ -127,7 +138,7 @@
         const year = document.getElementById('yearSelect').value;
         const month = document.getElementById('monthSelect').value;
 
-        if(!card || isNaN(amount)) return alert("Hatalı giriş!");
+        if(!card || isNaN(amount)) return alert("Tutar giriniz!");
 
         const index = db.statements.findIndex(s => s.card === card && s.year === year && s.month === month);
         const entry = { card, amount, day: day || 1, year, month, isPaid: false };
@@ -152,11 +163,11 @@
             total += s.amount;
             listDiv.innerHTML += `
                 <div class="list-item ${s.isPaid ? 'paid' : ''}">
-                    <div><strong>${s.card}</strong><br><small>${s.amount.toLocaleString('tr-TR')} TL | Gün: ${s.day}</small></div>
+                    <div><strong>${s.card}</strong><br><small>${s.amount.toLocaleString('tr-TR')} TL | G: ${s.day}</small></div>
                     <button onclick="togglePaid('${s.card}', '${s.year}', '${s.month}')" style="width:auto; min-height:35px; padding:5px 10px;">${s.isPaid ? 'Aç' : 'Öde'}</button>
                 </div>`;
         });
-        document.getElementById('totalDisplay').innerText = `TOPLAM: ${total.toLocaleString('tr-TR')} TL`;
+        document.getElementById('totalDisplay').innerText = `TOPLAM: ${total.toLocaleString('tr-TR', {minimumFractionDigits:2})} TL`;
     }
 
     function togglePaid(card, year, month) {
@@ -166,46 +177,58 @@
         refreshUI();
     }
 
-    function saveToStorage() { localStorage.setItem('cc_tracker_v5', JSON.stringify(db)); }
+    function saveToStorage() { localStorage.setItem('cc_tracker_v7', JSON.stringify(db)); }
 
-    // YEDEKLEME FONKSİYONLARI
     function exportBackup() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-        const dl = document.createElement('a'); dl.setAttribute("href", dataStr);
-        dl.setAttribute("download", "kart_takip_yedek.json"); dl.click();
-    }
-
-    // Dosya seçilemiyorsa alternatif: Metin yapıştırarak yükleme
-    function importFromText() {
-        const txt = prompt("JSON yedeğin içindeki metni buraya yapıştırın:");
-        if (txt) {
-            try {
-                const imported = JSON.parse(txt);
-                if (imported.cards) {
-                    db = imported;
-                    saveToStorage();
-                    location.reload();
-                }
-            } catch (e) { alert("Hatalı metin!"); }
-        }
+        const dl = document.createElement('a');
+        dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", "kart_takip_yedek.json");
+        document.body.appendChild(dl);
+        dl.click();
+        document.body.removeChild(dl);
     }
 
     function importBackup(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = function(e) {
             try {
                 const imported = JSON.parse(e.target.result);
-                if (imported.cards) {
-                    db = imported;
-                    saveToStorage();
-                    alert("Yedek başarıyla yüklendi!");
-                    location.reload();
+                if (processImport(imported)) {
+                    alert("Dosya başarıyla yüklendi!");
                 }
-            } catch (err) { alert("Dosya okunamadı!"); }
+            } catch (err) {
+                alert("Hata: Dosya içeriği geçerli bir JSON değil!");
+            }
         };
         reader.readAsText(file);
+        event.target.value = ''; // Aynı dosyayı tekrar seçebilmek için temizle
+    }
+
+    function importFromTextArea() {
+        const val = document.getElementById('importArea').value;
+        if (!val) return alert("Kutu boş!");
+        try {
+            const imported = JSON.parse(val);
+            if (processImport(imported)) {
+                alert("Metin başarıyla yüklendi!");
+            }
+        } catch (e) {
+            alert("Hata: Metin geçerli bir JSON değil!");
+        }
+    }
+
+    function processImport(data) {
+        if (data && data.cards && Array.isArray(data.statements)) {
+            db = data;
+            saveToStorage();
+            location.reload();
+            return true;
+        }
+        alert("Hata: Veri yapısı uyumsuz!");
+        return false;
     }
 
     function clearAllData() {
@@ -216,6 +239,7 @@
     }
 
     window.onload = init;
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 </script>
 </body>
 </html>

@@ -10,6 +10,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <activity android:name=".GoogleAuthorizationActivity" android:exported="false" android:theme="@style/AppTheme" />
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
@@ -25,5 +26,6 @@
 
         </activity>
     </application></manifest>
+
 
 

@@ -1,9 +1,6 @@
 package com.estebanesquare.karttakip;
 
 import android.os.Bundle;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.IntentSenderRequest;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -12,11 +9,6 @@ import android.view.View;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-    KartNativePlugin authPlugin;
-    final ActivityResultLauncher<IntentSenderRequest> authorization = registerForActivityResult(
-        new ActivityResultContracts.StartIntentSenderForResult(), result -> {
-            if (authPlugin != null) authPlugin.authorizationResult(result.getResultCode(), result.getData());
-        });
     @Override public void onCreate(Bundle savedInstanceState) {
         registerPlugin(KartNativePlugin.class);
         super.onCreate(savedInstanceState);

@@ -2,11 +2,11 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kart Takip Pro v8.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Kart Takip</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js" defer></script>
     <style>
         :root { --bg: #121212; --surface: #1e1e1e; --primary: #BB86FC; --secondary: #03DAC6; --error: #CF6679; --text: #FFFFFF; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
@@ -23,18 +23,18 @@
         .paid { border-left: 6px solid var(--secondary); opacity: 0.8; }
         .chart-container { height: 300px; margin-top: 10px; width: 100%; }
         .flex-row { display: flex; gap: 5px; }
-    </style>
+    body { padding-bottom: env(safe-area-inset-bottom); } header { box-sizing:border-box; padding-top: max(15px,env(safe-area-inset-top)); } .flex-row > * { min-width:0; } .list-item { gap:8px; overflow-wrap:anywhere; } button:disabled { opacity:.5; } input[type=checkbox] { width:24px; min-height:24px; vertical-align:middle; } #status { padding:12px; color:var(--secondary); overflow-wrap:anywhere; } dialog { background:#1e1e1e; color:white; border:1px solid #BB86FC; border-radius:12px; max-width:90vw; } pre { white-space:pre-wrap; overflow-wrap:anywhere; } </style>
 </head>
 <body>
 
-<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip Pro v8.0</h1></header>
+<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip</h1></header>
 
-<div class="container">
+<div class="container"><p id="status" role="status" aria-live="polite">Uygulama açılıyor…</p>
     <!-- Dönem ve Kart -->
     <div class="card">
         <h2>Dönem ve Kart</h2>
         <div class="flex-row">
-            <select id="yearSelect" onchange="refreshUI()"></select>
+            <input aria-label="Yıl" id="yearSelect" type="number" min="1" max="9999" list="knownYears" onchange="refreshUI()"><datalist id="knownYears"></datalist>
             <select id="monthSelect" onchange="refreshUI()"></select>
         </div>
         <div class="flex-row" style="margin-top: 10px;">
@@ -72,199 +72,28 @@
         <h2>Veri Yönetimi (.TXT Yedek)</h2>
         <div class="flex-row">
             <button class="btn-secondary" onclick="exportBackup()">YEDEK İNDİR (.TXT)</button>
-            <button onclick="document.getElementById('importFile').click()">DOSYA SEÇ (.TXT)</button>
+            <button onclick="chooseBackup()">Telefonumdan Yedek Yükle</button>
         </div>
-        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".txt,text/plain">
+        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".txt,.json,text/plain,application/json">
 
-        <p style="font-size: 11px; color: #aaa; margin: 15px 0 5px 0;">Manuel Metin Yükleme:</p>
+        <label for="importMode">Aktarım yöntemi</label><select id="importMode"><option value="merge">Verileri Birleştir</option><option value="replace">Verileri Değiştir</option></select><button onclick="restoreSafety()">Aktarım öncesi güvenlik yedeğini geri al</button><p style="font-size: 11px; color: #aaa; margin: 15px 0 5px 0;">Manuel Metin Yükleme:</p>
         <textarea id="importArea" placeholder="Yedek metnini buraya yapıştırın..."></textarea>
         <button onclick="importFromTextArea()">METNİ YÜKLE</button>
 
         <button class="btn-danger" style="margin-top: 20px;" onclick="clearAllData()">TÜM VERİLERİ SİL</button>
     </div>
+    <div class="card">
+      <h2>Google Drive ve Ayarlar</h2>
+      <button onclick="driveConnect()">Google hesabını bağla</button>
+      <button onclick="driveBackup()">Drive’a şimdi yedekle</button>
+      <button onclick="driveList()">Drive yedeklerini listele</button>
+      <div id="driveFiles"></div>
+      <label><input type="checkbox" id="autoBackup" onchange="setAutoBackup()"> Otomatik Drive yedeği (uygulama açıkken)</label>
+      <p id="lastBackup">Henüz Drive yedeği yok.</p>
+      <button onclick="driveDisconnect()">Google hesabından çıkış yap</button>
+      <p>Yedekler uçtan uca şifrelenmez. Google Drive hesabınızın koruması geçerlidir.</p>
+    </div>
 </div>
-
-<script>
-    let db = JSON.parse(localStorage.getItem('cc_tracker_v8')) ||
-             JSON.parse(localStorage.getItem('cc_tracker_v7')) ||
-             { cards: [], statements: [] };
-
-    const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-    let yearlyChart = null;
-
-    function init() {
-        const ySel = document.getElementById('yearSelect');
-        const mSel = document.getElementById('monthSelect');
-        const now = new Date();
-
-        for(let i = 2024; i <= 2030; i++) {
-            let opt = document.createElement('option'); opt.value = i; opt.innerText = i;
-            if(i === now.getFullYear()) opt.selected = true;
-            ySel.appendChild(opt);
-        }
-
-        months.forEach((m, index) => {
-            let opt = document.createElement('option'); opt.value = m; opt.innerText = m;
-            if(index === now.getMonth()) opt.selected = true;
-            mSel.appendChild(opt);
-        });
-
-        updateCardOptions();
-        refreshUI();
-    }
-
-    function updateCardOptions() {
-        const cSel = document.getElementById('cardSelect');
-        cSel.innerHTML = "";
-        db.cards.forEach(c => {
-            let opt = document.createElement('option'); opt.value = c; opt.innerText = c;
-            cSel.appendChild(opt);
-        });
-    }
-
-    function addCardPrompt() {
-        let name = prompt("Kart Adı:");
-        if(name && !db.cards.includes(name)) {
-            db.cards.push(name);
-            saveToStorage();
-            updateCardOptions();
-        }
-    }
-
-    function saveEntry() {
-        const card = document.getElementById('cardSelect').value;
-        const amount = parseFloat(document.getElementById('amountInput').value);
-        const day = parseInt(document.getElementById('dayInput').value);
-        const year = document.getElementById('yearSelect').value;
-        const month = document.getElementById('monthSelect').value;
-
-        if(!card || isNaN(amount)) return alert("Tutar giriniz!");
-
-        const index = db.statements.findIndex(s => s.card === card && s.year === year && s.month === month);
-        const entry = { card, amount, day: day || 1, year, month, isPaid: false };
-
-        if(index > -1) db.statements[index] = entry;
-        else db.statements.push(entry);
-
-        saveToStorage();
-        refreshUI();
-        document.getElementById('amountInput').value = "";
-        document.getElementById('dayInput').value = "";
-    }
-
-    function refreshUI() {
-        const year = document.getElementById('yearSelect').value;
-        const month = document.getElementById('monthSelect').value;
-        const listDiv = document.getElementById('entryList');
-        listDiv.innerHTML = "";
-
-        const filtered = db.statements.filter(s => s.year === year && s.month === month);
-        let total = 0;
-
-        filtered.sort((a,b) => a.day - b.day).forEach((s, i) => {
-            total += s.amount;
-            listDiv.innerHTML += `
-                <div class="list-item ${s.isPaid ? 'paid' : ''}">
-                    <div><strong>${s.card}</strong><br><small>${s.amount.toLocaleString('tr-TR')} TL | G: ${s.day}</small></div>
-                    <button onclick="togglePaid('${s.card}', '${s.year}', '${s.month}')" style="width:auto; min-height:35px; padding:5px 10px;">${s.isPaid ? 'Aç' : 'Öde'}</button>
-                </div>`;
-        });
-        document.getElementById('totalDisplay').innerText = `TOPLAM: ${total.toLocaleString('tr-TR', {minimumFractionDigits:2})} TL`;
-
-        updateYearlyChart(year);
-    }
-
-    function togglePaid(card, year, month) {
-        const idx = db.statements.findIndex(s => s.card === card && s.year === year && s.month === month);
-        db.statements[idx].isPaid = !db.statements[idx].isPaid;
-        saveToStorage();
-        refreshUI();
-    }
-
-    function updateYearlyChart(selectedYear) {
-        const ctx = document.getElementById('yearlyBarChart').getContext('2d');
-
-        const chartData = months.map(m => {
-            return db.statements
-                .filter(s => s.year === selectedYear && s.month === m)
-                .reduce((sum, curr) => sum + curr.amount, 0);
-        });
-
-        if(yearlyChart) yearlyChart.destroy();
-
-        yearlyChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: months.map(m => m.substring(0,3)),
-                datasets: [{
-                    label: selectedYear + ' Aylık Toplam (TL)',
-                    data: chartData,
-                    backgroundColor: '#BB86FC',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: '#333' } },
-                    x: { ticks: { color: '#fff', font: { size: 10 } }, grid: { display: false } }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
-    }
-
-    function saveToStorage() { localStorage.setItem('cc_tracker_v8', JSON.stringify(db)); }
-
-    // .TXT OLARAK DIŞA AKTAR
-    function exportBackup() {
-        const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-        const dl = document.createElement('a');
-        dl.setAttribute("href", dataStr);
-        dl.setAttribute("download", "kart_takip_yedek.txt");
-        dl.click();
-    }
-
-    // .TXT OLARAK İÇE AKTAR
-    function importBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                processImport(imported);
-            } catch (err) { alert("Hata: Dosya içeriği geçerli bir yedek metni değil!"); }
-        };
-        reader.readAsText(file);
-    }
-
-    function importFromTextArea() {
-        const val = document.getElementById('importArea').value;
-        try {
-            const imported = JSON.parse(val);
-            processImport(imported);
-        } catch (e) { alert("Hata: Metin geçerli bir JSON yapısı değil!"); }
-    }
-
-    function processImport(data) {
-        if (data && data.cards) {
-            db = data;
-            saveToStorage();
-            alert("Yedek başarıyla yüklendi!");
-            location.reload();
-        }
-    }
-
-    function clearAllData() {
-        if(confirm("TÜM veriler silinecek! Emin misiniz?")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    window.onload = init;
-</script>
+<dialog id="conflictDialog"><h2>Çakışan ekstre</h2><pre id="conflictText"></pre><button id="keepExisting">Mevcut değeri koru</button><button id="keepIncoming">Gelen değeri koru</button><button id="cancelImport">Aktarımı iptal et</button></dialog>
 </body>
 </html>

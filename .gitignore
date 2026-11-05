@@ -1,0 +1,13 @@
+node_modules/
+www/
+android/.gradle/
+android/**/build/
+android/local.properties
+*.jks
+*.keystore
+.env*
+artifacts/
+.gradle-cache/
+
+android/app/google-services.json
+artifacts-build.log

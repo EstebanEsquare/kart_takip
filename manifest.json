@@ -1,6 +1,6 @@
 {
-  "name": "Kredi Kartı Takip Pro",
-  "short_name": "KartTakip",
+  "name": "Kart Takip",
+  "short_name": "Kart Takip",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#121212",

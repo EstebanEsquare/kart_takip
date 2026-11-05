@@ -46,9 +46,9 @@ Mevcut Chrome bağlantısı kullanıldı; ikinci Playwright kurulumu yapılmadı
 
 APK: `artifacts/Kart-Takip-1.1-debug.apk`.
 
-Boyut: **5.145.916 bayt** (yaklaşık 4,91 MiB).
+$15.146.156 bayt** (yaklaşık 4,91 MiB).
 
-SHA-256: `87AFC56311FC82FE134F92855D0BCD9CF078C8C79A3E61D6B23E24F11A487BB3`.
+SHA-256: `F6CAD9009DEAE699AA01A5428A5E4255792EF1B6F2DA0F3CE9820FAFE7E2273C`.
 
 İmza `apksigner verify --print-certs` ile doğrulandı. Yerel APK SHA-1’i: `9F:BE:BA:F3:C6:77:3F:B8:EB:C5:92:C5:48:6D:F9:72:6D:FE:B0:51`. Bu değer yalnızca bu anahtarla üretilen APK içindir; Actions APK’sı için kendi tanılama/imza çıktısı kullanılmalıdır.
 
@@ -62,3 +62,4 @@ Web asset izin listesi arşivde kontrol edildi: app.js, app.css, index.html, ico
 - Kullanıcıya ait release anahtarıyla imzalı release derlemesi.
 
 Cihaza APK kurulmadı veya cihazdaki kullanıcı verisi değiştirilmedi. Otomatik yedek yalnızca uygulama açık/yeniden etkin olduğunda güvenilir şekilde denenir; kapalı uygulamada arka plan garantisi verilmez.
+

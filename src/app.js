@@ -21,7 +21,6 @@ async function main() {
     drive: new Drive(Native, native),
     nativeApi: native
       ? {
-          ...Native,
           readBackup: () => Native.readBackup(),
           writeBackup: (args) => Native.writeBackup(args),
           diagnostics: () => Native.diagnostics(),

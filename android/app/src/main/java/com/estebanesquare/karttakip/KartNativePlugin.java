@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
 import android.content.pm.Signature;
 import android.os.Build;
+import android.graphics.Color;
 import java.security.MessageDigest;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.ConnectionResult;
@@ -117,7 +118,24 @@ public class KartNativePlugin extends Plugin {
             int status=GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(getContext());output.put("googlePlayServices",status==0?"Kullanılabilir":"Kullanılamıyor (kod "+status+")");call.resolve(output);
         }catch(Exception e){call.reject("APK imza bilgisi okunamadı.");}
     }
-    @PluginMethod public void setSystemTheme(PluginCall call){getActivity().runOnUiThread(()->{boolean light=Boolean.TRUE.equals(call.getBoolean("light",false));WindowCompat.getInsetsController(getActivity().getWindow(),getActivity().getWindow().getDecorView()).setAppearanceLightStatusBars(light);WindowCompat.getInsetsController(getActivity().getWindow(),getActivity().getWindow().getDecorView()).setAppearanceLightNavigationBars(light);call.resolve();});}
+    @SuppressWarnings("deprecation")
+    @PluginMethod public void setSystemTheme(PluginCall call){
+        getActivity().runOnUiThread(()->{
+            boolean light=Boolean.TRUE.equals(call.getBoolean("light",false));
+            int color=Color.parseColor(light?"#F2F5F0":"#10191D");
+            getActivity().getWindow().getDecorView().setBackgroundColor(color);
+            getActivity().findViewById(android.R.id.content).setBackgroundColor(color);
+            getActivity().getWindow().setStatusBarColor(color);
+            getActivity().getWindow().setNavigationBarColor(color);
+            WindowCompat.getInsetsController(getActivity().getWindow(),getActivity().getWindow().getDecorView()).setAppearanceLightStatusBars(light);
+            WindowCompat.getInsetsController(getActivity().getWindow(),getActivity().getWindow().getDecorView()).setAppearanceLightNavigationBars(light);
+            call.resolve();
+        });
+    }
+    @Override protected void handleOnDestroy(){
+        authHandler.removeCallbacks(authTimeout);authCall=null;accessToken=null;
+        super.handleOnDestroy();
+    }
     @PluginMethod public void disconnect(PluginCall call) {
         getActivity().runOnUiThread(() -> client().revokeAccess(RevokeAccessRequest.builder()
             .setScopes(Collections.singletonList(scope)).build())

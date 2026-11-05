@@ -4,7 +4,8 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: ['feat/android-offline-drive', main]
+    branches: ["feat/android-offline-drive", main]
+    paths-ignore: ["README.md", "TEST-REPORT.md"]
 permissions:
   contents: read
 jobs:
@@ -15,15 +16,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
           cache: npm
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
       - uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools'
+          packages: "platform-tools"
           log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
@@ -38,6 +39,8 @@ jobs:
           if [ -n "$KEYSTORE" ]; then
             mkdir -p "$HOME/.android"
             printf '%s' "$KEYSTORE" | base64 --decode > "$HOME/.android/debug.keystore"
+          else
+            echo '::warning::Sabit debug imzası tanımlı değil. Bu APK önceki kurulumun üzerine yüklenemeyebilir; Google OAuth SHA-1 eşleşmesini kontrol edin.'
           fi
       - name: APK derle ve doğrula
         run: |
@@ -45,11 +48,17 @@ jobs:
           cd android
           ./gradlew assembleDebug lintDebug --console=plain
           test -s app/build/outputs/apk/debug/app-debug.apk
-          sha256sum app/build/outputs/apk/debug/app-debug.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk | tee app/build/outputs/apk/debug/SHA256.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | tee app/build/outputs/apk/debug/APK-imzasi.txt
+          printf '### Kart Takip APK\n\nPaket: `com.estebanesquare.karttakip`\n\nGoogle Cloud Android OAuth istemcisinde bu APK imzasını kullanın:\n\n```text\n' >> "$GITHUB_STEP_SUMMARY"
+          cat app/build/outputs/apk/debug/APK-imzasi.txt >> "$GITHUB_STEP_SUMMARY"
+          printf '\n```\n\nArtifacts: kart-takip-debug-apk\n' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: kart-takip-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/APK-imzasi.txt
+            android/app/build/outputs/apk/debug/SHA256.txt
           if-no-files-found: error
           retention-days: 30

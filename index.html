@@ -1,99 +1,547 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!doctype html>
+<html lang="tr" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#10191d" />
     <title>Kart Takip</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#121212">
-    <script src="app.js" defer></script>
-    <style>
-        :root { --bg: #121212; --surface: #1e1e1e; --primary: #BB86FC; --secondary: #03DAC6; --error: #CF6679; --text: #FFFFFF; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
-        header { width: 100%; padding: 15px; text-align: center; background-color: var(--surface); box-shadow: 0 4px 6px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100; }
-        .container { width: 95%; max-width: 500px; padding: 15px; box-sizing: border-box; }
-        .card { background: var(--surface); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        h2 { color: var(--primary); margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        input, select, button, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #2c2c2c; color: white; font-size: 16px; box-sizing: border-box; min-height: 48px; }
-        button { background-color: var(--primary); color: #000; font-weight: bold; border: none; cursor: pointer; }
-        .btn-danger { background-color: var(--error); color: white; }
-        .btn-secondary { background-color: var(--secondary); color: #000; }
-        .summary-box { text-align: center; font-size: 1.4rem; color: var(--secondary); margin: 15px 0; font-weight: bold; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #333; background: #252525; margin-bottom: 5px; border-radius: 8px; }
-        .paid { border-left: 6px solid var(--secondary); opacity: 0.8; }
-        .chart-container { height: 300px; margin-top: 10px; width: 100%; }
-        .flex-row { display: flex; gap: 5px; }
-    body { padding-bottom: env(safe-area-inset-bottom); } header { box-sizing:border-box; padding-top: max(15px,env(safe-area-inset-top)); } .flex-row > * { min-width:0; } .list-item { gap:8px; overflow-wrap:anywhere; } button:disabled { opacity:.5; } input[type=checkbox] { width:24px; min-height:24px; vertical-align:middle; } #status { padding:12px; color:var(--secondary); overflow-wrap:anywhere; } dialog { background:#1e1e1e; color:white; border:1px solid #BB86FC; border-radius:12px; max-width:90vw; } pre { white-space:pre-wrap; overflow-wrap:anywhere; } </style>
-</head>
-<body>
-
-<header><h1 style="font-size: 1.1rem; margin: 0;">Kart Takip</h1></header>
-
-<div class="container"><p id="status" role="status" aria-live="polite">Uygulama açılıyor…</p>
-    <!-- Dönem ve Kart -->
-    <div class="card">
-        <h2>Dönem ve Kart</h2>
-        <div class="flex-row">
-            <input aria-label="Yıl" id="yearSelect" type="number" min="1" max="9999" list="knownYears" onchange="refreshUI()"><datalist id="knownYears"></datalist>
-            <select id="monthSelect" onchange="refreshUI()"></select>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icon-512.png" />
+    <link rel="stylesheet" href="app.css" />
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <svg
+      class="icon-defs"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <symbol id="i-card" viewBox="0 0 24 24">
+          <rect x="3" y="5" width="18" height="14" rx="3" />
+          <path d="M3 10h18M7 15h3" />
+        </symbol>
+        <symbol id="i-home" viewBox="0 0 24 24">
+          <path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z" />
+        </symbol>
+        <symbol id="i-chart" viewBox="0 0 24 24">
+          <path d="M4 4v16h16M8 15v-4m5 4V8m5 7V5" />
+        </symbol>
+        <symbol id="i-cloud" viewBox="0 0 24 24">
+          <path
+            d="M7 18a5 5 0 1 1 .5-10A7 7 0 0 1 21 11a3.5 3.5 0 0 1-1 7M12 12v9m-3-6 3-3 3 3"
+          />
+        </symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24">
+          <path
+            d="m10 3-.6 2.4-2 .9-2.2-.7-2 3.4 1.6 1.7v2.6L3.2 15l2 3.4 2.2-.7 2 .9.6 2.4h4l.6-2.4 2-.9 2.2.7 2-3.4-1.6-1.7v-2.6L20.8 9l-2-3.4-2.2.7-2-.9L14 3z"
+          />
+          <circle cx="12" cy="12" r="3" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" />
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+          <path d="m9 5 7 7-7 7" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <path d="m5 12 4 4L19 6" />
+        </symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24">
+          <rect x="5" y="10" width="14" height="11" rx="3" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" />
+        </symbol>
+        <symbol id="i-down" viewBox="0 0 24 24">
+          <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
+        </symbol>
+        <symbol id="i-up" viewBox="0 0 24 24">
+          <path d="M12 15V3m-5 5 5-5 5 5M4 16v5h16v-5" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24">
+          <path d="m6 6 12 12M18 6 6 18" />
+        </symbol>
+        <symbol id="i-edit" viewBox="0 0 24 24">
+          <path d="m15 4 5 5M4 20l5-1L21 7l-4-4L5 15z" />
+        </symbol>
+        <symbol id="i-info" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v6m0-10v1" />
+        </symbol>
+      </defs>
+    </svg>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Kart Takip ana sayfa"
+          ><img src="icon-512.png" alt="" width="38" height="38" /><span
+            >Kart Takip<small>KİŞİSEL FİNANSIN, DÜZENİNDE.</small></span
+          ></a
+        ><button
+          class="icon-button"
+          data-go="settings"
+          aria-label="Ayarları aç"
+        >
+          <svg><use href="#i-settings" /></svg>
+        </button>
+      </header>
+      <main id="main">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow" id="pageEyebrow">GENEL BAKIŞ</p>
+            <h1 id="pageTitle">Finansına bir bakış.</h1>
+          </div>
+          <span class="local-badge"
+            ><svg><use href="#i-lock" /></svg>Cihazda güvende</span
+          >
         </div>
-        <div class="flex-row" style="margin-top: 10px;">
-            <select id="cardSelect" style="flex: 2;"></select>
-            <button onclick="addCardPrompt()" style="flex: 1;">+ Kart</button>
+        <section class="period-bar" aria-label="Dönem seçimi">
+          <button id="previousMonth" class="icon-button" aria-label="Önceki ay">
+            <svg class="rotate"><use href="#i-arrow" /></svg>
+          </button>
+          <div class="period-fields">
+            <label
+              ><span class="sr-only">Ay</span
+              ><select id="monthSelect" aria-label="Ay"></select></label
+            ><label
+              ><span class="sr-only">Yıl</span
+              ><input
+                id="yearSelect"
+                aria-label="Yıl"
+                type="number"
+                min="1"
+                max="9999"
+                list="knownYears" /></label
+            ><datalist id="knownYears"></datalist>
+          </div>
+          <button id="nextMonth" class="icon-button" aria-label="Sonraki ay">
+            <svg><use href="#i-arrow" /></svg>
+          </button>
+        </section>
+        <p id="fatalError" class="notice error" role="alert" hidden></p>
+        <section id="screen-home" class="screen" aria-label="Özet">
+          <div class="overview-grid">
+            <article class="balance-card">
+              <div class="balance-top">
+                <span id="periodLabel">Bu ay</span
+                ><span class="pill">AYLIK ÖZET</span>
+              </div>
+              <p class="balance-label">Toplam ekstre tutarı</p>
+              <div class="balance-amount" id="totalDisplay">₺0,00</div>
+              <div class="payment-progress" aria-hidden="true">
+                <span id="paidProgress"></span>
+              </div>
+              <div class="balance-footer">
+                <span
+                  ><i class="dot"></i>Ödenen
+                  <strong id="paidAmount">₺0,00</strong></span
+                ><span
+                  ><i class="dot pending"></i>Bekleyen
+                  <strong id="pendingAmount">₺0,00</strong></span
+                >
+              </div>
+            </article>
+            <div class="side-summary">
+              <article class="metric">
+                <span class="metric-icon mint"
+                  ><svg><use href="#i-check" /></svg
+                ></span>
+                <div>
+                  <small>Ödendi</small><strong id="paidCount">0 ekstre</strong>
+                </div>
+              </article>
+              <article class="metric">
+                <span class="metric-icon amber"
+                  ><svg><use href="#i-card" /></svg
+                ></span>
+                <div>
+                  <small>Bekliyor</small
+                  ><strong id="pendingCount">0 ekstre</strong>
+                </div>
+              </article>
+              <article class="next-day">
+                <small>Sıradaki bekleyen ekstre günü</small
+                ><strong id="nextDay">Henüz kayıt yok</strong
+                ><span>Ekstre günü, son ödeme tarihi değildir.</span>
+              </article>
+            </div>
+          </div>
+          <div class="section-heading">
+            <h2>Kartların</h2>
+            <button class="text-button" data-action="add-card">
+              Kart ekle <span aria-hidden="true">＋</span>
+            </button>
+          </div>
+          <div id="cardList" class="cards-grid"></div>
+          <div class="section-heading">
+            <h2>Bu ayın ekstreleri</h2>
+            <button class="text-button" data-go="statements">
+              Tümünü gör <svg><use href="#i-arrow" /></svg>
+            </button>
+          </div>
+          <div id="homeEntries" class="entry-stack"></div>
+          <div class="privacy-note">
+            <svg><use href="#i-lock" /></svg>
+            <p>
+              Kontrol sende.<br /><span
+                >Kayıtların cihazında kalır. Drive yedeklemesini dilediğinde
+                aç.</span
+              >
+            </p>
+          </div>
+        </section>
+        <section
+          id="screen-statements"
+          class="screen"
+          aria-label="Ekstreler"
+          hidden
+        >
+          <div class="section-heading">
+            <div>
+              <h2>Aylık ekstreler</h2>
+              <p id="entryCount" class="muted"></p>
+            </div>
+            <button class="button primary compact" data-action="add-entry">
+              <svg><use href="#i-plus" /></svg>Yeni ekstre
+            </button>
+          </div>
+          <div class="segments" role="group" aria-label="Ödeme durumu filtresi">
+            <button data-filter="all" aria-pressed="true">Tümü</button
+            ><button data-filter="pending" aria-pressed="false">Bekleyen</button
+            ><button data-filter="paid" aria-pressed="false">Ödenen</button>
+          </div>
+          <div id="entryList" class="entry-stack"></div>
+        </section>
+        <section id="screen-history" class="screen" aria-label="Geçmiş" hidden>
+          <article class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">12 AYDA BÜYÜK RESİM</p>
+                <h2 id="chartTitle">Yıllık harcama</h2>
+              </div>
+              <span class="chart-total" id="yearTotal">₺0,00</span>
+            </div>
+            <div class="chart-container">
+              <canvas
+                id="yearlyBarChart"
+                role="img"
+                aria-label="Seçili yılın aylık ekstre toplamları"
+              ></canvas>
+            </div>
+            <p class="muted">Grafik, seçtiğin yılın tüm aylarını kapsar.</p>
+          </article>
+          <div class="section-heading">
+            <h2>Aydan aya</h2>
+            <span class="muted">İncelemek için seç</span>
+          </div>
+          <div id="monthOverview" class="month-grid"></div>
+        </section>
+        <section
+          id="screen-backup"
+          class="screen"
+          aria-label="Yedekleme"
+          hidden
+        >
+          <article class="drive-panel panel">
+            <div class="service-heading">
+              <span class="service-icon"
+                ><svg><use href="#i-cloud" /></svg
+              ></span>
+              <div>
+                <h2>Google Drive</h2>
+                <p>Bir kopyan da yanında olsun.</p>
+              </div>
+              <span class="state-chip" id="driveBadge">Bağlı değil</span>
+            </div>
+            <div
+              id="driveMessage"
+              class="drive-message"
+              role="status"
+              aria-live="polite"
+            >
+              Drive bağlantısı kurulmadı. Yerel kayıtların ve TXT yedeklerin
+              giriş yapmadan çalışır.
+            </div>
+            <p id="driveAccount" class="muted" hidden></p>
+            <div class="action-grid">
+              <button id="driveConnect" class="button primary">
+                Google Drive’a bağlan</button
+              ><button id="driveBackup" class="button secondary" disabled>
+                <svg><use href="#i-up" /></svg>Şimdi yedekle</button
+              ><button id="driveList" class="button secondary" disabled>
+                <svg><use href="#i-cloud" /></svg>Yedekleri getir
+              </button>
+            </div>
+            <p class="backup-date" id="lastBackup">
+              Henüz başarılı Drive yedeği yok.
+            </p>
+            <div id="driveFiles" class="drive-files"></div>
+            <p class="fine-print">
+              Google hesabı yalnızca Drive için kullanılır. Yedekler düz
+              JSON’dur; uçtan uca şifrelenmez.
+            </p>
+          </article>
+          <article class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">HER ZAMAN ERİŞİLEBİLİR</p>
+                <h2>Dosyayla yedekle</h2>
+              </div>
+              <svg class="section-icon"><use href="#i-down" /></svg>
+            </div>
+            <p class="muted">
+              İnternet veya Google hesabı gerekmez. Eski v7 ve v8 TXT
+              yedeklerini de buradan yükleyebilirsin.
+            </p>
+            <div class="action-grid">
+              <button id="exportBackup" class="button secondary">
+                <svg><use href="#i-down" /></svg>TXT yedeği kaydet</button
+              ><button id="chooseBackup" class="button secondary">
+                <svg><use href="#i-up" /></svg>Telefonumdan yükle
+              </button>
+            </div>
+            <input
+              type="file"
+              id="importFile"
+              accept=".txt,.json,text/plain,application/json"
+              hidden
+            /><label class="field"
+              ><span>Aktarım yöntemi</span
+              ><select id="importMode">
+                <option value="merge">Verileri Birleştir</option>
+                <option value="replace">Verileri Değiştir</option></select
+              ><small id="importHint"
+                >Mevcut kayıtlar korunur. Farklı değerler için seçim
+                yaparsın.</small
+              ></label
+            >
+            <details>
+              <summary>Yedek metnini yapıştır</summary>
+              <label class="field"
+                ><span>TXT / JSON içeriği</span
+                ><textarea
+                  id="importArea"
+                  rows="4"
+                  placeholder="Yedek metnini buraya yapıştır…"
+                ></textarea></label
+              ><button id="importText" class="button secondary">
+                Metni yükle
+              </button>
+            </details>
+            <button id="restoreSafety" class="text-button wide">
+              Aktarım öncesi güvenlik kopyasını geri al
+            </button>
+            <p id="importResult" class="notice" role="status" hidden></p>
+          </article>
+        </section>
+        <section
+          id="screen-settings"
+          class="screen"
+          aria-label="Ayarlar"
+          hidden
+        >
+          <article class="panel">
+            <h2>Görünüm</h2>
+            <p class="muted">Sana en rahat gelen görünümü seç.</p>
+            <div class="segments" role="group" aria-label="Tema">
+              <button data-theme-choice="dark" aria-pressed="true">Koyu</button
+              ><button data-theme-choice="light" aria-pressed="false">
+                Açık</button
+              ><button data-theme-choice="system" aria-pressed="false">
+                Sistem
+              </button>
+            </div>
+          </article>
+          <article class="panel">
+            <h2>Yedekleme tercihleri</h2>
+            <label class="setting-row"
+              ><span
+                ><strong>Otomatik Drive yedeği</strong
+                ><small
+                  >Uygulama açıkken, değişikliklerden 30 saniye sonra.</small
+                ></span
+              ><input type="checkbox" id="autoBackup" role="switch"
+            /></label>
+            <p class="fine-print">
+              Bağlantı yoksa kayıtların cihazda kalır. Uygulama kapalıyken arka
+              plan yedeklemesi garanti edilmez.
+            </p>
+            <button id="driveDisconnect" class="button secondary wide">
+              Google hesabından çıkış yap
+            </button>
+          </article>
+          <article class="panel">
+            <h2>Bağlantı tanılama</h2>
+            <p class="muted">
+              Google yapılandırmasında bu APK’nın paket adı ve imzası
+              kullanılmalı.
+            </p>
+            <button id="diagnose" class="button secondary wide">
+              <svg><use href="#i-info" /></svg>APK ve Google bilgilerini göster
+            </button>
+            <pre id="diagnostics" class="diagnostics" hidden></pre>
+          </article>
+          <article class="panel danger-zone">
+            <h2>Veri yönetimi</h2>
+            <p class="muted">
+              Silmeden önce bir TXT yedeği almanı öneririz. Drive’daki yedekler
+              silinmez.
+            </p>
+            <button id="clearData" class="button danger wide">
+              Tüm yerel verileri sil
+            </button>
+          </article>
+          <div class="app-about">
+            <img src="icon-512.png" alt="" width="42" height="42" />
+            <div>
+              <strong>Kart Takip</strong>
+              <p>Sürüm 1.1 · Cihazında, kontrolünde.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+      <button id="addEntryFab" class="fab" aria-label="Ekstre ekle">
+        <svg><use href="#i-plus" /></svg><span>Ekstre ekle</span>
+      </button>
+      <nav class="bottom-nav" aria-label="Ana gezinme">
+        <button data-go="home" aria-current="page">
+          <svg><use href="#i-home" /></svg><span>Özet</span></button
+        ><button data-go="statements">
+          <svg><use href="#i-card" /></svg><span>Ekstreler</span></button
+        ><button data-go="history">
+          <svg><use href="#i-chart" /></svg><span>Geçmiş</span></button
+        ><button data-go="backup">
+          <svg><use href="#i-cloud" /></svg><span>Yedek</span></button
+        ><button data-go="settings">
+          <svg><use href="#i-settings" /></svg><span>Ayarlar</span>
+        </button>
+      </nav>
+    </div>
+    <div
+      id="status"
+      class="snackbar"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+    <dialog id="cardDialog" class="sheet" aria-labelledby="cardDialogTitle">
+      <form id="cardForm">
+        <div class="sheet-heading">
+          <div>
+            <p class="eyebrow">YENİ BİR BAŞLANGIÇ</p>
+            <h2 id="cardDialogTitle">Kartını ekle</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button"
+            data-close="cardDialog"
+            aria-label="Kapat"
+          >
+            <svg><use href="#i-close" /></svg>
+          </button>
         </div>
-    </div>
-
-    <!-- Veri Girişi -->
-    <div class="card">
-        <h2>Hızlı Veri Girişi</h2>
-        <input type="number" id="amountInput" placeholder="Tutar (TL)" inputmode="decimal">
-        <input type="number" id="dayInput" placeholder="Gün (1-31)" inputmode="numeric">
-        <button onclick="saveEntry()">KAYDET</button>
-    </div>
-
-    <div class="summary-box" id="totalDisplay">0.00 TL</div>
-
-    <!-- Harcama Listesi -->
-    <div class="card">
-        <h2>Bu Ayın Listesi</h2>
-        <div id="entryList"></div>
-    </div>
-
-    <!-- YILLIK ANALİZ GRAFİĞİ -->
-    <div class="card">
-        <h2>Yıllık Harcama Seyri (12 Ay)</h2>
-        <div class="chart-container">
-            <canvas id="yearlyBarChart"></canvas>
+        <p class="muted">
+          Kart numarası gerekmez. Tanıyacağın bir isim yeterli.
+        </p>
+        <label class="field"
+          ><span>Kart adı</span
+          ><input
+            id="cardName"
+            autocomplete="off"
+            maxlength="200"
+            placeholder="Kartının adı"
+            required
+        /></label>
+        <p id="cardError" class="form-error" role="alert"></p>
+        <button type="submit" class="button primary wide">Kartı ekle</button>
+      </form>
+    </dialog>
+    <dialog id="entryDialog" class="sheet" aria-labelledby="entryDialogTitle">
+      <form id="entryForm">
+        <div class="sheet-heading">
+          <div>
+            <p class="eyebrow" id="entryPeriod"></p>
+            <h2 id="entryDialogTitle">Yeni ekstre</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button"
+            data-close="entryDialog"
+            aria-label="Kapat"
+          >
+            <svg><use href="#i-close" /></svg>
+          </button>
         </div>
-    </div>
-
-    <!-- Veri Yönetimi -->
-    <div class="card">
-        <h2>Veri Yönetimi (.TXT Yedek)</h2>
-        <div class="flex-row">
-            <button class="btn-secondary" onclick="exportBackup()">YEDEK İNDİR (.TXT)</button>
-            <button onclick="chooseBackup()">Telefonumdan Yedek Yükle</button>
-        </div>
-        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".txt,.json,text/plain,application/json">
-
-        <label for="importMode">Aktarım yöntemi</label><select id="importMode"><option value="merge">Verileri Birleştir</option><option value="replace">Verileri Değiştir</option></select><button onclick="restoreSafety()">Aktarım öncesi güvenlik yedeğini geri al</button><p style="font-size: 11px; color: #aaa; margin: 15px 0 5px 0;">Manuel Metin Yükleme:</p>
-        <textarea id="importArea" placeholder="Yedek metnini buraya yapıştırın..."></textarea>
-        <button onclick="importFromTextArea()">METNİ YÜKLE</button>
-
-        <button class="btn-danger" style="margin-top: 20px;" onclick="clearAllData()">TÜM VERİLERİ SİL</button>
-    </div>
-    <div class="card">
-      <h2>Google Drive ve Ayarlar</h2>
-      <button onclick="driveConnect()">Google hesabını bağla</button>
-      <button onclick="driveBackup()">Drive’a şimdi yedekle</button>
-      <button onclick="driveList()">Drive yedeklerini listele</button>
-      <div id="driveFiles"></div>
-      <label><input type="checkbox" id="autoBackup" onchange="setAutoBackup()"> Otomatik Drive yedeği (uygulama açıkken)</label>
-      <p id="lastBackup">Henüz Drive yedeği yok.</p>
-      <button onclick="driveDisconnect()">Google hesabından çıkış yap</button>
-      <p>Yedekler uçtan uca şifrelenmez. Google Drive hesabınızın koruması geçerlidir.</p>
-    </div>
-</div>
-<dialog id="conflictDialog"><h2>Çakışan ekstre</h2><pre id="conflictText"></pre><button id="keepExisting">Mevcut değeri koru</button><button id="keepIncoming">Gelen değeri koru</button><button id="cancelImport">Aktarımı iptal et</button></dialog>
-</body>
+        <label class="field"
+          ><span>Kart</span
+          ><select
+            id="cardSelect"
+            aria-label="Ekstre kartı"
+            required
+          ></select></label
+        ><button type="button" data-action="add-card" class="text-button">
+          ＋ Yeni kart ekle</button
+        ><label class="field amount-field"
+          ><span>Ekstre tutarı</span>
+          <div>
+            <input
+              type="text"
+              inputmode="decimal"
+              id="amountInput"
+              placeholder="0,00"
+              autocomplete="off"
+              required
+              aria-label="Tutar (TL)"
+            /><span>TL</span>
+          </div></label
+        ><label class="field"
+          ><span>Ekstre günü</span
+          ><input
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="31"
+            id="dayInput"
+            placeholder="1–31"
+            required
+          /><small
+            >Seçilen yıl ve ay için kaydedilir. Aynı dönem kaydı
+            güncellenir.</small
+          ></label
+        >
+        <p id="entryError" class="form-error" role="alert"></p>
+        <button type="submit" class="button primary wide" id="saveEntry">
+          Ekstreyi kaydet
+        </button>
+      </form>
+    </dialog>
+    <dialog
+      id="confirmDialog"
+      class="sheet compact-sheet"
+      aria-labelledby="confirmTitle"
+    >
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmText" class="muted"></p>
+      <div class="action-grid">
+        <button id="confirmCancel" class="button secondary">Vazgeç</button
+        ><button id="confirmAccept" class="button primary">Devam et</button>
+      </div>
+    </dialog>
+    <dialog id="conflictDialog" class="sheet" aria-labelledby="conflictTitle">
+      <p class="eyebrow">AYNI KART · AYNI DÖNEM</p>
+      <h2 id="conflictTitle">Hangi kayıt korunsun?</h2>
+      <p id="conflictLabel" class="muted"></p>
+      <div class="conflict-grid">
+        <button id="keepExisting" class="conflict-option">
+          <strong>Mevcut kayıt</strong><span id="existingValue"></span></button
+        ><button id="keepIncoming" class="conflict-option">
+          <strong>Gelen kayıt</strong><span id="incomingValue"></span>
+        </button>
+      </div>
+      <button id="cancelImport" class="text-button wide">
+        Aktarımı iptal et
+      </button>
+    </dialog>
+  </body>
 </html>

@@ -1,34 +1,64 @@
-# Test ve derleme raporu — 5 Kasım 2026
+# Kart Takip 1.1 — test ve doğrulama raporu
 
-## Doğrulananlar
+Tarih: 5 Kasım 2026. Çalışma dalı: `feat/android-offline-drive`. main değiştirilmedi.
 
-- `npm test`: **19/19 başarılı**. Temiz depo, kart/ekstre, ödeme korunması, yeniden açılış, 1997 ve gelecek yıllar, v7/v8 TXT, aynı yedeğin tekrar yüklenmesi, birleştirme, değiştirme, çakışmada karar/iptal, güvenlik kopyası, bozuk dosya, yazma hatası, eşzamanlı ayar yazımı, negatif ekstre (alacak) ve Drive ağ hatasında yerel verinin korunması.
-- Drive HTTP istemcisinin klasör/yükleme/indirme/silme ve sayfalı tarih sıralı listeleme protokolü **taklit servisle** test edildi. Bu, gerçek Google hesabı testi değildir.
-- `npm run sync`: başarılı; Chart.js harici CDN olmadan `app.js` içinde paketlendi.
-- `:app:assembleDebug :app:lintDebug`: **BUILD SUCCESSFUL**. Lint hata yok; şablon/kütüphane sürümü/ikon biçimiyle ilgili uyarılar mevcut. Toplu bağımlılık güncellemesi yapılmadı.
-- APK gerçekten oluştu; Android `apksigner verify --print-certs` doğrulaması geçti.
-- AAPT: ad **Kart Takip**, paket **com.estebanesquare.karttakip**, minimum API **24**, hedef API **36**. INTERNET ve AndroidX'in uygulamaya özel imza seviyeli dahili receiver izni dışında izin yok. Depolama, kamera, rehber veya konum izni yok.
-- APK arşivindeki web varlıkları izin listesiyle kontrol edildi: app.js, index.html, icon-512.png, manifest.json, sw.js ve boş Cordova uyumluluk dosyaları. Kullanıcı yedeği / test fixture pakette yok.
-- Chrome yerel önizlemede boş kart listesi, **TOPLAM: 0,00 TL**, yıl/ay ve grafik alanıyla açıldı. Uygulama açılış durumu **Veriler cihazda saklanır** olarak görüldü.
+## Kullanıcı bildirimi ve Drive incelemesi
 
-## APK
+Bildirilen davranış: Yedekle/listele sonrasında hesap seçimi açılıyor, hesap seçilince görünür sonuç veya hata olmuyor.
 
-Yerel teslim: `artifacts/Kart-Takip-debug.apk` (Git'e eklenmez).
+Kodda doğrulanan eksikler: Sonuç mesajı uzun sayfanın üstündeydi; düğme altındayken görünmeyebiliyordu. Bağlı hesap/ilerleme göstergesi yoktu. Yetkilendirme sonucu MainActivity üstündeki geçici plugin alanına bağlıydı; hesap seçimi ve ağ isteği zaman aşımıyla sınırlandırılmıyordu. OAuth/API hata nedenleri kullanıcıya ayrı gösterilmiyordu. Sabit anahtar tanımlanmayan Actions APK’larında imza SHA-1’i değişebiliyordu.
 
-Temiz derleme boyutu: 9.275.488 bayt (yaklaşık 8,85 MiB).
+Düzeltmeler: Capacitor saved ActivityCallback ve dışa kapalı GoogleAuthorizationActivity; native 120 saniye yetkilendirme sınırı; yaklaşık 30 saniye ağ sınırı; API üzerinden bağlantı doğrulama ve hesap bilgisi; bağlandıktan sonra otomatik listeleme; kalıcı ekran içi ilerleme/hata; 401 sonrası tek token yenilemesi; yapılandırma/izin/kota/ağ ayrımı; kurulu APK paket/SHA-1/Play services tanılaması; sessiz otomatik işlemlerde izin ekranı açmama. Tokenlar bellekte; bridge günlüklemesi kapalı.
 
-SHA-256: `EEDE0B51061CF9867DD4A1988D2CE0D7D48A50DA9104344E350117F3D939A46E`
+**Gerçek cihazdaki Google hata kodu elde edilmedi. Kesin tek bir kök neden veya gerçek hesapta uçtan uca başarı doğrulanmış değildir.** Google Cloud paket/SHA-1 eşleşmesi kullanıcı tarafından tamamlanmalı ve cihazda test edilmelidir.
 
-Bu yerel debug APK imzasının SHA-1'i: `9F:BE:BA:F3:C6:77:3F:B8:EB:C5:92:C5:48:6D:F9:72:6D:FE:B0:51`.
+## Otomatik testler
 
-Bu fingerprint gizli değildir. Google Android OAuth istemcisinde **bu APK için** kullanılabilir. Actions APK'sının imzası sabit anahtar yapılandırılmadıysa farklı olacaktır; Actions doğrulama çıktısını esas alın.
+`npm test`: **38 test, 38 başarılı**.
 
-## Test edilmemiş işlemler
+- Temiz depo, boş kart/ekstre ve varsayılan kapalı otomatik yedek.
+- Kart ve ekstre ekleme, aynı dönemi güncelleme, ödeme durumunu koruma, yeniden açılış.
+- Geçmiş/gelecek yıllar, ay sınırları ve yıllık toplamların ayrılığı.
+- v7/v8 TXT/JSON, sarılı yapı, birleştirme/değiştirme/çakışma ve iptal; aynı yedek tekrarında çoğalmama.
+- Bozuk/eksik/geçersiz tipli yedek reddi; başarısız yazımda önceki durumun korunması.
+- Güvenlik kopyası, eşzamanlı metadata yazımı, tek işlemde yerel veri temizliği.
+- jsdom içinde gerçek HTML olaylarıyla kart/ekstre formları, ödeme, düzenleme, dönemler, TXT dışa aktarma, tema kalıcılığı, ekran geçişi, geri tuşu, değiştirme onayından vazgeçme ve HTML girişlerinin güvenli gösterilmesi.
+- Drive bekleme/success/error durumlarının UI’da gösterilmesi; hata sonrası yerel kullanıma devam; bozuk Drive indirmesinde veriyi koruma.
+- Taklit HTTP servisiyle Drive yükleme/indirme/silme/sayfalı listeleme, 401 yenileme, yapılandırma/kota hataları, hesap/ağ zaman aşımı ve sessiz profil/liste yenilemesi.
 
-- Gerçek Google hesabı ile OAuth, Drive'a yükleme/listeleme/geri yükleme/silme ve yetki iptali: kullanıcıya ait Google Cloud projesi, Android OAuth istemcisi ve cihaz gerekir.
-- Android cihazında ilk kurulum, uygulamayı sonlandırıp açma, güncelleme sonrası kayıtların korunması, fiziksel geri tuşu, klavye, sistem çubukları, farklı ekranlar ve gerçek çevrimdışı grafik kullanımı.
-- Android sistem dosya seçicisinden gerçek TXT açma/kaydetme. Java köprüsü derlendi ancak cihaz etkileşimi çalıştırılmadı.
-- Chrome'daki kart ekleme prompt'unda otomasyon CDP zaman aşımına uğradı. Windows Computer Use, tarayıcı URL'sini güvenilir biçimde belirleyemediği için oturumu durdurdu. Bu noktadan sonraki UI kontrolleri başarılı sayılmadı.
-- İmzalı release APK: yapılandırma hazır; kullanıcıya ait release anahtarıyla derleme yapılmadı.
+Google sunucusuna bu testlerde istek gönderilmez. DOM testleri Chart adaptörünü taklit eder; gerçek grafik ayrıca tarayıcıda görüldü.
 
-Telefon üzerinde veri değiştiren test, APK kurulumu, yeni emülatör/SDK indirmesi veya gerçek finansal veri aktarımı yapılmadı. Otomatik yedekleme yalnızca uygulama açıkken/yeniden etkinleştiğinde çalışır; kapalı uygulama için arka plan garantisi yoktur.
+## Gerçek Chrome kontrolü
+
+Mevcut Chrome bağlantısı kullanıldı; ikinci Playwright kurulumu yapılmadı. Sentetik, yalnızca yerel tarayıcı deposunda tutulan deneme kaydı kullanıldı; APK’ya konmadı.
+
+- Boş açılış, mobil kart ekleme, Türkçe `1.250,50` tutar kaydı, ödeme işaretleme ve sayfa yeniden açılışında kalıcılık doğrulandı.
+- Geçmiş ekranında Chart.js gerçek 12 aylık grafiği çizdi.
+- Web önizlemede Drive’ın APK gerektirdiği açık, kalıcı hata mesajıyla görüldü; yerel kayıtlar çalışmaya devam etti.
+- Koyu/açık tema ve masaüstü/390 px telefon görünümü incelendi.
+- 320 px görünümde beş ekranın tamamında `scrollWidth === clientWidth`: yatay taşma yok.
+- Tarayıcı konsolunda kontrol sırasında hata yoktu.
+- Yerel önizleme görüntüsü: `artifacts/yeni-arayuz-mobil.png` (test kaydı içerir, Git/APK içinde değildir).
+
+## Yerel Android derlemesi
+
+`npm run sync` ve `:app:clean :app:assembleDebug :app:lintDebug`: **BUILD SUCCESSFUL**. Android lint hata vermedi; şablon/bağımlılık güncelliği ve ikon biçimi gibi uyarılar engelleyici değildir.
+
+APK: `artifacts/Kart-Takip-1.1-debug.apk`.
+
+Boyut: **5.145.916 bayt** (yaklaşık 4,91 MiB).
+
+SHA-256: `87AFC56311FC82FE134F92855D0BCD9CF078C8C79A3E61D6B23E24F11A487BB3`.
+
+İmza `apksigner verify --print-certs` ile doğrulandı. Yerel APK SHA-1’i: `9F:BE:BA:F3:C6:77:3F:B8:EB:C5:92:C5:48:6D:F9:72:6D:FE:B0:51`. Bu değer yalnızca bu anahtarla üretilen APK içindir; Actions APK’sı için kendi tanılama/imza çıktısı kullanılmalıdır.
+
+Web asset izin listesi arşivde kontrol edildi: app.js, app.css, index.html, icon-512.png, manifest.json, sw.js ve boş Cordova dosyaları. Beklenmeyen dosya veya sentetik test kaydı yok. Paket kimliği aynı; versionCode 2 / versionName 1.1. Android 7.0 / API 24+; hedef 36. İzinler INTERNET ve AndroidX’in uygulamaya özel imza seviyeli dahili receiver iznidir; depolama/konum/kamera/rehber izni yok.
+
+## Cihazda ayrıca denenmesi gerekenler
+
+- Gerçek Google hesabıyla seçim dönüşü, API yetkisi, Drive’a gerçek yükleme/listeleme/geri yükleme/silme ve yetki iptali.
+- Android’in gerçek dosya seçicisi ve kaydetme paneli; fiziksel klavye/geri tuşu/sistem çubukları, süreç öldürülmesi ve üreticiye özgü davranışlar.
+- Aynı imzayla önceki APK üzerine güncelleme ve gerçek çevrimdışı cihaz kullanımı.
+- Kullanıcıya ait release anahtarıyla imzalı release derlemesi.
+
+Cihaza APK kurulmadı veya cihazdaki kullanıcı verisi değiştirilmedi. Otomatik yedek yalnızca uygulama açık/yeniden etkin olduğunda güvenilir şekilde denenir; kapalı uygulamada arka plan garantisi verilmez.

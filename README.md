@@ -1,75 +1,154 @@
-# Kart Takip — Android
+# Kart Takip 1.1 — Android
 
-Koyu tasarımı koruyan, Capacitor 8 tabanlı çevrimdışı kredi kartı ekstre takibi. Paket kimliği: `com.estebanesquare.karttakip`. Android 7.0 (API 24) ve üzeri, güncel Android System WebView gerekir. Chart.js APK içinde paketlenir; uygulamayı açmak, kart/ekstre kaydetmek ve grafik görmek için internet gerekmez.
+Çevrimdışı kredi kartı ekstre takibi. Capacitor 8, yerel Chart.js ve Material 3 yaklaşımından yararlanan yeni mobil arayüz. Android 7.0 / API 24 ve üzeri, güncel Android System WebView gerekir. Uygulamanın paket kimliği **com.estebanesquare.karttakip** olarak korunmuştur; sürüm kodu **2**, sürüm **1.1**.
 
-## Özellikler ve veri güvenliği
+**Temiz kurulum boştur. APK’ya kişisel finansal veri, test kaydı veya örnek kart eklenmez.** Kart, tutar ve geçmiş kayıtları kurulumdan sonra kullanıcı oluşturur veya yedekten aktarır.
 
-- İlk kurulumda **hiçbir kart, ekstre veya örnek harcama yoktur**. Web paketi açık dosya izin listesiyle hazırlanır; testler ve kişisel yedekler APK'ya kopyalanmaz.
-- Kart ekleme, yıl/ay/kart seçme, tutar/gün kaydetme, düzenleme, ödendi durumunu değiştirme, aylık toplam ve seçilen yılın 12 aylık grafiği korunur. Yıl alanına 1–9999 arasında istediğiniz yılı yazabilirsiniz; kayıtlı yıllar önerilir. 2024–2030 sınırı kaldırılmıştır.
-- Android'de uygulamaya özel Android AtomicFile (fsync ve atomik dosya değiştirme), web önizlemede localStorage kullanılır. Veri yazımı başarılı olmadan ekrandaki veri değiştirilmez. Depo açılamazsa kayıtların üzerine yazılmasını önlemek için düzenleme kapatılır.
-- İçe aktarma öncesi güvenlik kopyası ve yeni kayıtlar aynı depo anahtarına yazılır. Son aktarım öncesi kopya uygulamadan geri alınabilir. Hatalı dosya eski kayıtları değiştirmez. Güvenlik kopyası cihazdaki asıl depodan bağımsız bir felaket kurtarma yedeği değildir; TXT/Drive yedeğinizi de saklayın.
-- Kart adları DOM'a `textContent` ile yazılır. Harici script, analitik veya reklam bulunmaz. Google Drive dışında kullanıcı verisi gönderilen bir sunucu yoktur.
-- Yalnızca INTERNET izni tanımlanır. Dosyalar Android sistem dosya seçicisiyle açılır/kaydedilir; geniş depolama izni istenmez. Android otomatik uygulama yedeği kapalıdır. Cihazdaki veritabanı ayrıca şifrelenmez; Android uygulama yalıtımı ve cihaz kilidiyle korunur.
-- Google erişim belirteci yalnızca geçici bellektedir; Preferences'a, dosyaya, günlüklere veya Git'e yazılmaz. Yeniden açılışta Google Play services üzerinden yeniden yetki alınır; uygulama refresh token saklamaz.
+## Yeni arayüz
 
-## APK indirme ve telefona kurma
+Uzun tek sayfa yerine alt gezinmeyle erişilen beş ekran vardır:
 
-1. Bu değişikliklerin bulunduğu branch veya PR için GitHub **Actions → Android APK** çalışmasını açın. PR/push otomatik derleme başlatır. Workflow main'e alındıktan sonra **Run workflow** ile elle de başlatabilirsiniz.
-2. Başarılı çalışmanın **Artifacts → kart-takip-debug-apk** dosyasını indirin (GitHub oturumu gerekir).
-3. ZIP'i açın; `app-debug.apk` dosyasını telefona gönderin.
-4. Telefonda APK'yı açın; Android isterse yalnızca kullandığınız dosya yöneticisi/tarayıcı için bilinmeyen uygulama yükleme iznini verin. Kurulumdan sonra bu izni kapatabilirsiniz.
-5. Uygulama boş açılır. Eski TXT yedeğinizi aşağıdaki adımlarla yükleyin.
+| Ekran     | İçerik                                                                                       |
+| --------- | -------------------------------------------------------------------------------------------- |
+| Özet      | Seçili ayın toplamı, ödenen/bekleyen tutar ve sayılar, kartlar, aylık ekstreler              |
+| Ekstreler | Tümü/bekleyen/ödenen filtresi, ödeme rozetleri, düzenleme                                    |
+| Geçmiş    | Serbest yıl girişi, kayıtlı yıl önerileri, 12 aylık yerel grafik, aydan aya seçim            |
+| Yedek     | TXT kaydetme/yükleme, metin yapıştırma, birleştirme/değiştirme ve Google Drive               |
+| Ayarlar   | Koyu/açık/sistem teması, otomatik yedek, Google bağlantısı tanılama, çıkış ve veri temizliği |
 
-APK Actions Artifacts içinde 30 gün tutulur; kaynak depoya eklenmez. Başarısız çalışmada indirilecek APK yoktur. Debug sürüm kişisel deneme içindir.
+Kart ve ekstre ekleme alt panelde yapılır. Tutar alanı `1.250,50`, `1250,50` veya `1250.50` kabul eder. Aynı kart/yıl/ay kaydı güncellenir; ödeme durumu korunur. Geri tuşu önce açık paneli kapatır, sonra Özet’e döner; Özet’te çıkış onayı ister. Tema seçimi kalıcıdır. Harici font, CDN, reklam veya analitik kullanılmaz.
 
-### Güncellemelerde kayıtları koruma ve sabit imza
+**Ekstre günü son ödeme tarihi değildir.** Önceki veri yapısında son ödeme tarihi alanı olmadığı için bu bilgi uydurulmaz; gün alanı aynen korunur. Negatif ekstre tutarı (alacak) desteklenir.
 
-**Aynı paket kimliği ve aynı imzalama anahtarı** ile yeni APK'yı mevcut uygulamanın üzerine yükleyin; uygulamayı kaldırmayın ve verilerini temizlemeyin. Her sürümde `versionCode` artırılmalıdır. Kaldırma/telefon kaybı halinde yalnızca dışarı aldığınız TXT/Drive yedekleri kurtarılabilir.
+## APK indirme ve kurulum
 
-GitHub'ın geçici runner'ında otomatik üretilen debug anahtarı her çalışmada değişebilir. Böyle bir APK önceki APK üzerine güncellenemez ve OAuth SHA-1'i de değişir. Kalıcı test için kendi bilgisayarınızda oluşturduğunuz debug keystore'u saklayın; base64 içeriğini repository **Settings → Secrets and variables → Actions → ANDROID_DEBUG_KEYSTORE_BASE64** secret'ına koyun. Workflow bunu `$HOME/.android/debug.keystore` konumuna yükler. Standart debug alias/parola `androiddebugkey` / `android` olmalıdır. Anahtarın kendisini depoya yüklemeyin. Yerel ve Actions APK'larının güncellenebilmesi için aynı anahtarı kullanın. Gerçek kişisel verilerle kullanmadan önce sabit anahtar seçmeniz önerilir.
+1. GitHub **Actions → Android APK** bölümünden bu dalın son başarılı çalışmasını açın.
+2. **Artifacts → kart-takip-debug-apk** dosyasını indirin. GitHub oturumu gerekir.
+3. ZIP içinde `app-debug.apk`, `APK-imzasi.txt` ve `SHA256.txt` bulunur. APK’yı telefona gönderip açın.
+4. Android isterse kullandığınız dosya yöneticisi/tarayıcı için uygulama yükleme izni verin. Kurulum bitince bu izni kapatabilirsiniz.
+5. Uygulama boş açılır. Yerel özellikleri kullanmak için Google hesabı gerekmez.
 
-## Eski TXT yedeğini yükleme
+Artifact 30 gün tutulur. Workflow push/PR ile çalışır; main’e alındıktan sonra **Run workflow** ile de başlatılabilir. Derleme başarısızsa APK üretildiği varsayılmamalıdır.
 
-1. Eski web uygulamasından TXT yedeği alın; ayrı bir kopyasını saklayın.
-2. Yeni uygulamada **Aktarım yöntemi** seçin: **Verileri Birleştir** mevcut kayıtları korur, **Verileri Değiştir** mevcut kart ve ekstre listesini seçili yedekle değiştirir ve onay ister.
-3. **Telefonumdan Yedek Yükle** ile `.txt` veya `.json` dosyasını seçin. Alternatif: içeriği metin alanına yapıştırıp **METNİ YÜKLE** seçin. Drive geri yüklemesi de aynı aktarım yöntemini kullanır.
-4. Aynı kart + yıl + ay farklı değer içeriyorsa tutar, gün ve ödeme durumu karşılaştırılır. **Mevcut**, **Gelen** veya **İptal** seçin. Her çakışma ayrı sorulur; iptal edilirse hiçbir değişiklik uygulanmaz.
-5. İşlem sonunda yedekteki ve sonuçtaki kart/ekstre sayıları gösterilir. Son aktarımı geri almak için **Aktarım öncesi güvenlik yedeğini geri al** kullanın.
+### Güncelleme ve imza — veri kaybetmemek için
 
-v7/v8'in `{cards: ["Kart adı"], statements: [{card, amount, day, year, month, isPaid}]}` JSON yapısı desteklenir. Yıl sayısı veya metni kabul edilir, depoda metin olarak normalize edilir; yıl/ay/gün değiştirilmez. `cc_tracker_v7` / `cc_tracker_v8` anahtarlarıyla sarılı JSON da okunur. Herhangi bir aydaki kayıtlar filtrelenip atılmaz. Aynı yedeğin tekrar yüklenmesi çoğaltma yapmaz. Eksik/bozuk alanlar, tanımsız kartlar ve yedek içinde birbiriyle çelişen tekrarlar reddedilir. 20 MB dosya, 1000 kart, 100000 ekstre sınırı uygulanır. Gün eski formatla uyumlu olarak 1–31'dir; aylara göre yeni tarih üretimi/düzeltmesi yapılmaz.
+Güncellemede **aynı paket kimliği ve aynı imzalama anahtarı** gerekir. Uygulamayı kaldırmayın/verilerini temizlemeyin; yeni APK’yı üzerine yükleyin. Depo dosyasının adı ve v7/v8 veri mantığı değiştirilmemiştir. Yine de güncellemeden önce TXT yedeği alın.
 
-## Google Drive bağlantısı
+GitHub’ın geçici runner’ında üretilen debug anahtarı her çalışmada değişebilir. Bu durum hem “Uygulama yüklenmedi / imza uyuşmuyor” hatasına hem Google OAuth SHA-1 eşleşmesinin bozulmasına yol açar. Önceki APK’nın imzasıyla eşleşmeyen APK, verileri koruyarak üzerine kurulamaz. Eski runner’da kaybolan özel anahtarı uygulama koduyla geri getirmek mümkün değildir; böyle bir durumda eski uygulamadan TXT yedeği alıp yeni kurulumda aktarın.
 
-**Gerçek hesaptaki uçtan uca doğrulama, size ait Google Cloud yapılandırması ve cihazla yapılmalıdır. Kodun derlenmesi veya taklit servis testinin geçmesi Google hesabınızda çalıştığının kanıtı değildir.**
+Kalıcı test sürümleri için kendi debug keystore’unuzu güvenli yerde saklayın; base64 içeriğini repository **Settings → Secrets and variables → Actions → ANDROID_DEBUG_KEYSTORE_BASE64** secret’ına ekleyin. Workflow bunu `$HOME/.android/debug.keystore` konumunda kullanır. Standart debug alias `androiddebugkey`, parola `android` olmalıdır. Aynı anahtarı yerel derlemelerde de kullanın. Anahtar/parola depoya veya herkese açık Actions cache’ine konmaz. Secret yoksa workflow açık uyarı verir ve geçici debug imzasıyla devam eder.
 
-Android Google Identity Services `AuthorizationClient` ve OAuth 2.0 kullanılır. **Google hesabını bağla** Google'ın hesap seçme/izin ekranını açar. Profil/e-posta kapsamı istenmez; uygulama hesap kimlik bilgisi göstermez. **Drive’a şimdi yedekle** yeni dosya oluşturur. **Drive yedeklerini listele** tarih sıralamasıyla yükleme ve silme seçenekleri sunar. **Google hesabından çıkış yap** uygulamanın Drive yetkisini iptal eder; cihazdaki Google hesabını kaldırmaz.
+## Yerel kayıtlar ve TXT aktarımı
 
-Yalnızca `https://www.googleapis.com/auth/drive.file` kapsamı kullanılır. `Kart Takip Yedekleri` klasöründe `kart_takip_YYYY-AA-GG_SSDDss_benzersiz.json` isimleriyle ayrı dosyalar oluşturulur; eski dosyalar üzerine yazılmaz. Silme düğmesi onaydan sonra seçilen dosyayı Drive'dan kalıcı siler. Bu dar kapsam uygulamanın oluşturduğu veya kendisine açılmış dosyaları görür; Drive'a başka yoldan yüklenmiş tüm eski yedekleri kendiliğinden listelemez. Böyle dosyaları telefona indirip TXT/JSON olarak içe aktarabilirsiniz. Aynı uygulama/Google Cloud projesini koruyun.
+Android kayıtları uygulamaya özel `files/kart_takip_state_v1.json` dosyasındadır. Android **AtomicFile**, disk senkronizasyonu ve sıralı yazım kullanılır. Başarılı disk yazımından sonra UI güncellenir. Bozuk depo boş veri sayılarak üstüne yazılmaz; düzenleme durdurulur. Web önizlemede localStorage kullanılır. Cihazdaki dosya ayrıca uygulama parolasıyla şifrelenmez; Android uygulama yalıtımı ve cihaz kilidiyle korunur.
 
-Yedekler düz JSON'dur. HTTPS ile aktarılır ve Google Drive'ın hesap/depolama korumasından yararlanır; **uçtan uca veya uygulama parolasıyla şifrelenmiş değildir**. TXT dışa aktarımları da düz metindir.
+- **TXT yedeği kaydet:** Android sistem kaydetme seçicisini açar; geniş depolama izni gerekmez.
+- **Telefonumdan yükle:** `.txt` veya `.json` dosyasını Android dosya seçicisinden okuyun.
+- Alternatif: **Yedek metnini yapıştır** bölümünü açıp JSON içeriğini yükleyin.
+- **Verileri Birleştir:** Mevcut kart ve kayıtlar korunur; yenileri eklenir. Aynı kart/yıl/ay farklı tutar, gün veya ödeme durumu içeriyorsa iki değer ayrı gösterilir; mevcut/gelen/iptal seçilir.
+- **Verileri Değiştir:** Onaydan sonra seçilen yedek mevcut verinin yerini alır.
+- Önceki veri ve yeni veri aynı atomik işlemde saklanır. **Aktarım öncesi güvenlik kopyasını geri al** son aktarımı geri çevirebilir. Bu kopya aynı cihazda olduğundan TXT/Drive yedeğinin yerini tutmaz.
+- Bozuk dosya, iptal veya başarısız yazım mevcut veriyi değiştirmez. Aktarım sonunda okunan ve sonuçtaki kayıt sayıları görünür.
 
-### Google Cloud Console: sizin tamamlayacağınız ayarlar
+Eski `cc_tracker_v7` ve `cc_tracker_v8` TXT biçimi okunur: `{cards:["Kart adı"],statements:[{card,amount,day,year,month,isPaid}]}`. Bu anahtarlarla sarılı JSON da desteklenir. Sayısal yıl metne normalize edilir; yıl/ay/gün, tutar ve ödeme durumu değiştirilmez. Hiçbir geçmiş ay filtrelenip atılmaz. Aynı yedeği iki kez yüklemek kayıtları çoğaltmaz. Yıl alanı 1–9999, gün 1–31; dosya 20 MB, kart 1000, ekstre 100000 ile sınırlıdır. Eksik alanlar ve yedek içinde çelişen tekrarlar reddedilir.
 
-1. [Google Cloud Console](https://console.cloud.google.com/) üzerinde bir proje oluşturun veya kendi projenizi seçin.
-2. **APIs & Services → Library → Google Drive API → Enable** seçin.
-3. **Google Auth Platform → Branding** bölümünde uygulama adını `Kart Takip`, destek ve geliştirici iletişim e-postalarını kendi bilgilerinizle doldurun.
-4. **Audience** bölümünde kişisel hesap için **External**, geliştirmede **Testing** seçin. **Test users** listesine kendi Google e-posta adresinizi ekleyin. Test modundaki izinlerin süresi dolarsa uygulamadan yeniden bağlanın.
-5. **Data Access → Add or remove scopes** bölümüne yalnızca `https://www.googleapis.com/auth/drive.file` ekleyin. Tam Drive kapsamı eklemeyin.
-6. **Clients → Create client → Android** seçin. Paket adı: `com.estebanesquare.karttakip`. **Web application** veya Desktop istemcisi kullanmayın.
-7. İndireceğiniz APK'yı imzalayan anahtarın SHA-1 parmak izini girin. Yerelde `cd android` ardından `./gradlew signingReport` (Windows: `gradlew.bat signingReport`) kullanabilirsiniz. Actions adımı `apksigner verify --print-certs` ile sertifika özetini de gösterir. Sabit debug anahtarı kullanmadığınızda SHA-1 her derlemede değişebilir.
-8. Release anahtarı farklıysa o SHA-1 için aynı paket adını içeren ayrı Android OAuth istemcisi oluşturun. Ayarların yayılması biraz zaman alabilir. Google Play services bulunan telefonda Google hesabını bağlayıp bir deneme yedeği yükleyin, listeleyin ve geri yükleyin.
+Tüm yerel verileri silme, onaydan sonra kartları/ekstreleri/güvenlik kopyasını tek işlemde temizler ve otomatik yedeği kapatır. Drive’daki dosyalar silinmez. Kart adları HTML olarak çalıştırılmaz; `textContent` kullanılır.
 
-Bu Android yetkilendirme akışında web istemci sırrı, `google-services.json`, sunucu veya GitHub'a kaydedilen token gerekmez; eşleştirme paket adı + imza SHA-1 ile yapılır. OAuth onay/uygulama doğrulaması Google hesabınızın politikalarına göre ek işlem gerektirebilir.
+## Google Drive nasıl çalışır?
 
-Kaynaklar: [Android yetkilendirme](https://developer.android.com/identity/authorization), [Drive kapsamları](https://developers.google.com/workspace/drive/api/guides/api-specific-auth), [Android OAuth istemcisi](https://developers.google.com/identity/protocols/oauth2/native-app).
+Google hesabı yalnızca Drive’a dosya yüklemek/listelemek/indirmek için gerekir. **Bağlanmadan uygulamanın tüm yerel özellikleri çalışır.** Google’a Android’in resmi hesap/izin ekranından bağlanılır; uygulama parola istemez.
 
-### İsteğe bağlı otomatik yedek
+Akış:
 
-Varsayılan kapalıdır. Açıldığında değişiklikler 30 saniye birleştirilir; her tuşta dosya yüklenmez. Bekleyen yedek bilgisi cihazda kalıcıdır. Bağlantı geri geldiğinde veya uygulama yeniden etkinleştiğinde tekrar denenir. Son başarılı tarih ve hatalar ekranda gösterilir. Otomatik işlem kullanıcıya Google izin ekranı açmaz; yeniden yetki gerekirse elle bağlanmanız istenir. **Uygulama kapalıyken arka plan yedeklemesi garanti edilmez**; WorkManager servisi yoktur. Uygulamayı açıp kullanırken çalışır. Ağ hataları yerel kayıtları silmez.
+1. **Yedek → Google Drive’a bağlan** düğmesine dokunun ve Google hesabınızı seçin.
+2. Uygulama Google’dan token aldıktan sonra Drive `about.get` ile erişimi doğrular ve yedekleri getirir. Hesap seçiminin açılması tek başına başarı sayılmaz.
+3. Başarıda hesap bilgisi, “Bağlı” durumu ve yedek listesi görünür. Boş liste açıkça “henüz yedek yok” olarak gösterilir.
+4. **Şimdi yedekle** yeni bir dosya oluşturur. **Yedekleri getir** listeyi tarih sırasıyla yeniler.
+5. Bir dosyada **Bu yedeği geri yükle** seçilince dosya doğrulanır ve TXT ile aynı birleştir/değiştir/çakışma akışından geçer.
+6. **Ayarlar → Google hesabından çıkış yap** uygulamanın Drive iznini iptal eder. Telefondaki Google hesabınızı kaldırmaz.
 
-## Geliştirme ve yerel APK derleme
+Google Identity Services **AuthorizationClient + OAuth 2.0**, yalnızca `https://www.googleapis.com/auth/drive.file` kapsamıyla kullanılır. Profil kapsamı veya tüm Drive içeriğine erişim istenmez. Hesabın adı/e-postası Drive’ın kendi `about` yanıtından görüntülenir; diske kaydedilmez. Web OAuth client secret, backend, Firebase veya `google-services.json` gerekmez. Erişim tokenı yalnızca geçici bellektedir; diske/Git’e yazılmaz. Capacitor veri köprüsünün günlüklemesi hassas veri taşımamak için kapalıdır.
 
-Gerekenler: Node.js 22+, JDK 21, Android SDK platform 36 / build-tools 36.0.0, kabul edilmiş SDK lisansları. Capacitor 8.0.0 ve bağımlılıkları lock dosyasında sabittir. Android Studio'nun `jbr` dizini JDK olarak kullanılabilir. Büyük emülatör indirmek gerekmez.
+Dosyalar **Kart Takip Yedekleri** klasöründe `kart_takip_YYYY-AA-GG_SSDDss_benzersiz.json` adıyla saklanır. Önceki yedeğin üzerine otomatik yazılmaz. “Sil” kalıcı silme öncesi onay ister. Dar kapsam nedeniyle başka uygulamalardan Drive’a yüklenmiş tüm eski TXT dosyaları listelenmez; böyle yedekleri telefona indirip dosyadan aktarabilirsiniz.
+
+Yedekler düz JSON’dur; HTTPS ile aktarılır ve Google Drive hesabının korumasından yararlanır. **Uçtan uca şifrelenmez.** TXT dosyaları da düz metindir. Google dışında başka bir sunucuya kullanıcı verisi gönderilmez.
+
+### Hesap seçiminden sonra neden hiçbir şey görünmüyordu?
+
+Önceki UI, sonuç/hata metnini uzun sayfanın üstüne yazıyor; Drive düğmeleri aşağıdayken kullanıcı bu metni göremeyebiliyordu. İşlem ilerlemesi, bağlı hesap ve kalıcı Drive hata alanı yoktu. Hesap seçimi dönüşü MainActivity üstündeki geçici plugin alanına bağlıydı; yeniden oluşturma durumunda çağrı kaybolabilirdi. Ağ/yetkilendirme beklemeleri için zaman aşımı yoktu ve OAuth/API hataları ayrıntılandırılmıyordu.
+
+1.1’de sonuç **Capacitor’un kaydettiği ActivityCallback çağrısından**, dışa kapalı GoogleAuthorizationActivity üzerinden döner. Activity yeniden oluşturulması raporlanır. Hesap seçimi 120 saniye, ağ istekleri yaklaşık 30 saniye ile sınırlıdır; sessiz bekleme yerine hata gösterilir. 401 durumunda token önbelleği temizlenir ve bir kez yenilenir. API kapalı/izin/kota/ağ sorunları ayrı Türkçe mesaj verir. Yerel veri değişmez.
+
+**Kullanıcının cihazındaki asıl Google hata kodu alınmadığından kesin tek bir kök neden doğrulanmadı. Bu kod düzeltmeleri, Google Cloud yapılandırmasının doğru olduğu veya gerçek hesapta uçtan uca testin tamamlandığı anlamına gelmez.**
+
+## Google Cloud Console — adım adım
+
+### 1. Proje ve Drive API
+
+1. [Google Cloud Console](https://console.cloud.google.com/) üzerinde kendi projenizi oluşturun veya seçin.
+2. **APIs & Services → Library** açın, **Google Drive API** arayın ve **Enable** seçin.
+3. **Google Auth Platform → Branding** altında uygulama adını **Kart Takip**, destek e-postası ve geliştirici iletişim adreslerini kendi bilgilerinizle doldurun.
+4. **Audience** altında kişisel hesap için **External**, geliştirmede **Testing** seçin. **Test users** listesine bağlanacağınız Google e-postasını ekleyin. Şirket hesabı politikaları ayrıca erişimi sınırlayabilir.
+5. **Data Access → Add or remove scopes** altında yalnızca `https://www.googleapis.com/auth/drive.file` ekleyin.
+
+### 2. Kullanacağınız APK’nın SHA-1 bilgisini alın
+
+En kolay yöntem: telefonda **Ayarlar → Bağlantı tanılama → APK ve Google bilgilerini göster**. Bu ekran paket, sürüm, **kurulu APK’nın gerçek SHA-1’i** ve Google Play services durumunu gösterir.
+
+Alternatifler:
+
+- Actions çalışmasının **Summary** bölümündeki sertifika çıktısı veya artifact içindeki `APK-imzasi.txt`.
+- Yerelde Android klasöründe Windows: `.\gradlew.bat signingReport`; macOS/Linux: `./gradlew signingReport`.
+- Elinizdeki APK için Android SDK aracı: `apksigner verify --print-certs app-debug.apk`.
+
+SHA-256 veya dosyanın SHA-256 özetini SHA-1 alanına yazmayın. Yerel APK ile Actions APK’sı aynı anahtarla imzalanmadıysa SHA-1’leri farklıdır.
+
+### 3. Android OAuth istemcisi oluşturun
+
+**Google Auth Platform → Clients → Create client** altında:
+
+| Alan                          | Girilecek değer                                      |
+| ----------------------------- | ---------------------------------------------------- |
+| Application type              | **Android**                                          |
+| Name                          | Örneğin **Kart Takip Debug**                         |
+| Package name                  | **com.estebanesquare.karttakip**                     |
+| SHA-1 certificate fingerprint | Önceki adımda kullanacağınız APK’dan aldığınız SHA-1 |
+
+**Create** ile kaydedin. İstemci ID’si/parolası uygulama kaynaklarına yapıştırılmaz; Android akışı paket adı ve imza üzerinden eşleşir. **Web application/Desktop** türü bu eşleşmenin yerine geçmez. Ayarların yayılması zaman alabilir. Sonra uygulamadan yeniden bağlanın.
+
+Release APK’nızı başka anahtarla imzalarsanız **aynı paket adı + release SHA-1** için ayrı Android istemcisi oluşturun. Debug istemcisi farklı imzalı release’i yetkilendirmez. Kalıcı anahtar seçmeden her Actions APK’sına yeni OAuth istemcisi eklemek sürdürülebilir değildir.
+
+### Hataları ayırma
+
+| Belirti                        | Kontrol                                                                            |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| Google kodu 10 / 12500         | Android istemcisi, kurulu APK paket/SHA-1 eşleşmesi, test kullanıcısı              |
+| Drive API kapalı               | Aynı Cloud projesinde Google Drive API → Enable                                    |
+| 403 erişim reddedildi          | drive.file izni, test kullanıcısı ve kuruluş hesap politikası                      |
+| Hesap seçimi iptal/zaman aşımı | Yeniden bağlanın; tanılama ekranındaki bilgileri doğrulayın                        |
+| 401                            | Bir kez token yenilenir; sürerse yeniden bağlanın                                  |
+| Ağ zaman aşımı                 | Bağlantıyı kontrol edip yeniden deneyin; yerel kayıtlar korunur                    |
+| Bağlı ama liste boş            | Bu uygulamanın oluşturduğu/erişimine açılan yedekler görünür; ilk yedeği oluşturun |
+
+Kaynaklar: [Android yetkilendirme](https://developer.android.com/identity/authorization), [Drive kapsamları](https://developers.google.com/workspace/drive/api/guides/api-specific-auth), [Android OAuth istemcileri](https://developers.google.com/identity/protocols/oauth2/native-app).
+
+## Otomatik yedekleme
+
+Varsayılan kapalıdır. Drive bağlandıktan sonra Ayarlar’dan açılır. Veri değişiklikleri 30 saniye birleştirilir. Bekleyen yedek bayrağı kalıcıdır; bağlantı geri geldiğinde veya uygulama yeniden açıldığında denenir. Otomatik akış Google izin ekranı açmaz; izin yenilenmesi gerekiyorsa elle bağlanmanız söylenir. Son başarılı tarih görüntülenir. Yükleme sırasında yeni kayıt oluşursa yeni sürüm bekleyen olarak kalır.
+
+**Kapalı uygulamada arka plan garantisi yoktur**; WorkManager servisi eklenmemiştir. Drive hatası, iptal, bozuk indirme veya yetki eksikliği yerel veriyi silmez.
+
+## Geliştirme ve mimari
+
+- `src/data.js`: Değişmeyen v7/v8 yapısı, doğrulama, birleştirme ve sıralı depo yazımı.
+- `src/controller.js`: Ekranlar, kullanıcı işlemleri, diyaloglar ve yaşam döngüsü.
+- `src/ui.js`: Güvenli DOM bileşenleri, tutar/dönem gösterimi.
+- `src/drive.js`: OAuth köprüsü, HTTP zaman aşımı, hata sınıfları ve Drive protokolü.
+- `src/app.js`: Capacitor/Chart.js giriş ve platform adaptörleri.
+- `src/app.css` + `index.html`: Tema, mobil yerleşim, erişilebilir formlar ve ekranlar.
+- `design/icon.svg`: Yeni simgenin vektör kaynağı. `npm run icons` PNG yoğunluklarını üretir. Android adaptive ve monochrome kaynakları `res/drawable` altındadır.
+
+Node 22+, JDK 21, Android SDK platform 36 / build-tools 36.0.0 gerekir. Büyük emülatör gerekmez.
 
 ```powershell
 npm ci
@@ -78,25 +157,25 @@ npm run sync
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 $env:ANDROID_HOME='C:\Users\User\AppData\Local\Android\Sdk'
 cd android
-.\gradlew.bat assembleDebug lintDebug
+.\gradlew.bat :app:assembleDebug :app:lintDebug
 ```
 
-Kendi SDK yolunuzu `android/local.properties` içinde `sdk.dir=C\:/.../Android/Sdk` olarak tanımlayın veya ANDROID_HOME kullanın. `local.properties` Git'e girmez. APK: `android/app/build/outputs/apk/debug/app-debug.apk`. Windows'ta Türkçe çalışma klasörü için `android.overridePathCheck=true` ayarı vardır; araçlar sorun çıkarırsa ASCII proje yolu kullanın.
+Kendi SDK yolunuzu `android/local.properties` içinde `sdk.dir=C\:/.../Android/Sdk` biçiminde yazın veya ANDROID_HOME tanımlayın. Bu dosya Git’e eklenmez. Windows’ta Türkçe proje yolu için `android.overridePathCheck=true` tanımlıdır.
 
-Web önizleme: `npm run build`, ardından `node scripts/preview.mjs`; `http://127.0.0.1:4173` açın. Kaynak `index.html` doğrudan açılmak yerine oluşturulmuş `www` dizininden servis edilmelidir. Drive ve Android dosya köprüsü APK içinde çalışır.
+APK yolu: `android/app/build/outputs/apk/debug/app-debug.apk`. Web önizleme: `npm run build`, ardından `node scripts/preview.mjs`, sonra `http://127.0.0.1:4173`. Kaynak HTML doğrudan açılmaz; `www` servis edilir. Build açık dosya izin listesi kullanır; çıktı dizininde beklenmeyen dosya varsa paketleme durur. Testler, node_modules ve kişisel dosyalar APK’ya kopyalanmaz.
 
 ### İmzalı release
 
-`android/app/build.gradle` ortam değişkenlerinden isteğe bağlı release imzası okur. Bir kez kendinize ait anahtar oluşturun ve güvenli, çevrimdışı bir kopyasını saklayın:
+Bir kez kendinize ait keystore oluşturun; güvenli, çevrimdışı kopyasını saklayın:
 
 ```text
 keytool -genkeypair -keystore kart-takip-release.jks -alias karttakip -keyalg RSA -keysize 3072 -validity 10000
 ```
 
-`KART_KEYSTORE_PATH`, `KART_STORE_PASSWORD`, `KART_KEY_ALIAS`, `KART_KEY_PASSWORD` ortam değişkenlerini kendi anahtarınıza göre ayarlayıp `./gradlew assembleRelease` çalıştırın. Şifreleri komut geçmişine veya depoya yazmayın. İmzalama ayarı olmadan üretilen unsigned release kurulamaz. Keystore veya parola kaybolursa aynı uygulamayı veri koruyarak güncellemek mümkün olmayabilir. Debug'dan farklı imzalı release'e geçmeden önce TXT yedeği alın; Android farklı imzalı güncellemeyi reddeder.
+`KART_KEYSTORE_PATH`, `KART_STORE_PASSWORD`, `KART_KEY_ALIAS`, `KART_KEY_PASSWORD` ortam değişkenlerini kendi değerlerinizle tanımlayıp `./gradlew assembleRelease` çalıştırın. Parolaları komut geçmişine/depoya yazmayın. İmzalama ayarı olmadan unsigned release kurulamaz. Anahtar kaybolursa aynı paketle veri koruyan güncelleme yapılamayabilir. Debug’dan farklı imzalı release’e geçmeden TXT yedeği alın. Her sürümde versionCode artırılmalıdır.
 
-## Testler ve bilinen sınırlar
+## Test kapsamı ve sınırlar
 
-`npm test` veri katmanı ve taklit Drive servisi için otomatik testleri çalıştırır. Temiz depo, kart/ekstre, ödeme korunması, yeniden açılış, eski/gelecek yıl, v7/v8, mükerrer yükleme, birleştirme/değiştirme/iptal, bozuk dosya, yazma hatası ve ağ kesintisi kapsam içindedir. Testlerde yalnızca sentetik kayıtlar kullanılır.
+`npm test` veri/Drive protokolü testlerini ve jsdom ile gerçek arayüz olay akışlarını çalıştırır. Gerçek Google hesabı kullanılmaz. Chart.js’nin gerçek çizimi ayrıca tarayıcıda kontrol edilir; DOM testlerinde Chart adaptörü taklittir.
 
-Gerçek Google hesabında bağlama/yükleme/listeleme/geri yükleme/silme, Android cihazda dosya seçme/kaydetme, fiziksel geri tuşu, klavye, sistem çubuğu ve farklı üretici ekranları ayrıca cihaz üzerinde denenmelidir. Telefon üzerinde veri değiştiren otomatik test yapılmaz. Tam test/derleme durumu `TEST-REPORT.md` dosyasındadır.
+Gerçek Google hesabında hesap seçimi dönüşü, Drive dosyası oluşturma/listeleme/indirme/silme; Android üretici cihazlarında dosya seçici, klavye, sistem çubukları, süreç öldürme ve imzalı güncelleme ayrıca denenmelidir. Cihaza APK yükleyen veya verilerini değiştiren otomatik test çalıştırılmaz. Güncel derleme, test ve doğrulama ayrıntıları `TEST-REPORT.md` içindedir.

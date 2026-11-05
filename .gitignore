@@ -11,3 +11,4 @@ artifacts/
 
 android/app/google-services.json
 artifacts-build.log
+artifacts-tests.log

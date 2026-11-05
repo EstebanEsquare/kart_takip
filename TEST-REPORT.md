@@ -46,7 +46,7 @@ Mevcut Chrome bağlantısı kullanıldı; ikinci Playwright kurulumu yapılmadı
 
 APK: `artifacts/Kart-Takip-1.1-debug.apk`.
 
-$15.146.156 bayt** (yaklaşık 4,91 MiB).
+Boyut: **5.146.156 bayt** (yaklaşık 4,91 MiB).
 
 SHA-256: `F6CAD9009DEAE699AA01A5428A5E4255792EF1B6F2DA0F3CE9820FAFE7E2273C`.
 
@@ -63,3 +63,10 @@ Web asset izin listesi arşivde kontrol edildi: app.js, app.css, index.html, ico
 
 Cihaza APK kurulmadı veya cihazdaki kullanıcı verisi değiştirilmedi. Otomatik yedek yalnızca uygulama açık/yeniden etkin olduğunda güvenilir şekilde denenir; kapalı uygulamada arka plan garantisi verilmez.
 
+## GitHub Actions doğrulaması
+
+Son uygulama değişikliklerini içeren `fa7f311` commit’i için [Android APK çalışması](https://github.com/EstebanEsquare/kart_takip/actions/runs/42074710790) **başarılı** tamamlandı. `npm ci`, 38 test, web senkronizasyonu, APK/Android lint, SHA-256 ve APK imza doğrulaması geçti.
+
+`kart-takip-debug-apk` artifact’ı gerçekten oluştu: **13438345454**. ZIP içinde APK ile birlikte `APK-imzasi.txt` ve `SHA256.txt` bulunur. [Artifact indirme sayfası](https://github.com/EstebanEsquare/kart_takip/actions/runs/42074710790/artifacts/13438345454).
+
+Bu bulut derleme başarısı gerçek Google hesabıyla Drive testi yapıldığı anlamına gelmez. Yerel APK ve Actions APK’sının imzaları farklı olabilir. Sadece README/TEST-REPORT değişiklikleri yeniden APK derlemesi başlatmaz.
